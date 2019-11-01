@@ -20,7 +20,7 @@ conda env create -f environment.yml
 ```
 conda activate sim_playground
 ```
-- Run `install.sh`:
+- Run `install.sh` from the root folder:
 ```
 ./install.sh
 ```
