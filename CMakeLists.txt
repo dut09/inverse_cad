@@ -7,6 +7,15 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_definitions("-std=c++14 -Wall")
 
+# CGAL.
+find_package(CGAL REQUIRED)
+if(CGAL_FOUND)
+    include(${CGAL_USE_FILE})
+    # CGAL include folder.
+    set(CGAL_INCLUDE_DIR "${CGAL_DIR}/include")
+    include_directories(${CGAL_INCLUDE_DIR})
+endif()
+
 # Eigen.
 include_directories("external/eigen-3.3.7")
 

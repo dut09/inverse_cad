@@ -1,12 +1,4 @@
-# Download CGAL.
-if [ ! -d "external/cgal-4.14.1" ]
-then
-    wget https://github.com/CGAL/cgal/archive/releases/CGAL-4.14.1.zip
-    unzip CGAL-4.14.1.zip -d external/
-    mv external/cgal-releases-CGAL-4.14.1 external/cgal-4.14.1
-    rm -rf "CGAL-4.14.1.zip"
-fi
-
+sudo apt-get install libcgal-dev
 mkdir -p build
 cd build
 cmake ../
