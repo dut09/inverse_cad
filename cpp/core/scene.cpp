@@ -89,13 +89,73 @@ void Scene::ListInfo() const {
 }
 
 void Scene::Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op) {
-    // TODO.
-    std::cout << "Picking face: " << face_name << std::endl;
-    for (const auto& v : polygon) {
-        std::cout << "poly: " << v.transpose() << std::endl;
+    // TODO: use the face name to project the polygon.
+
+    // Create the new polyhedron.
+    std::stringstream ss;
+    const int poly_dof = static_cast<int>(polygon.size());
+
+    // Check the orientation of the polygon.
+    std::vector<Vector3r> offset_polygon;
+    for (const auto& v : polygon) offset_polygon.push_back(v - polygon[0]);
+    real vol = 0;
+    for (int i = 0; i < poly_dof; ++i) {
+        const int next_i = (i + 1) % poly_dof;
+        const Vector3r v0 = offset_polygon[i], v1 = offset_polygon[next_i];
+        vol += v0.cross(v1).dot(dir);
     }
-    std::cout << "dir: " << dir.transpose() << std::endl;
-    std::cout << "op: " << op << std::endl;
+    // Do nothing if the extrusion is degenerated.
+    if (vol == 0) return;
+
+    const bool reversed = vol < 0;
+    // Header.
+    ss << "OFF" << std::endl
+        << poly_dof * 2 << " " << poly_dof + 2 << " " << poly_dof * 3 << std::endl;
+    // Vertices.
+    for (const auto& v : polygon) {
+        ss << v.x() << " " << v.y() << " " << v.z() << std::endl;
+    }
+    for (const auto& v : polygon) {
+        const Vector3r v2 = v + dir;
+        ss << v2.x() << " " << v2.y() << " " << v2.z() << std::endl;
+    }
+    // Faces.
+    if (reversed) {
+        ss << poly_dof;
+        for (int i = 0; i < poly_dof; ++i) ss << " " << i;
+        ss << std::endl << poly_dof;
+        for (int i = poly_dof - 1; i >= 0; --i) ss << " " << i + poly_dof;
+        ss << std::endl;
+
+        for (int i = 0; i < poly_dof; ++i) {
+            const int j = (i + 1) % poly_dof;
+            ss << 4 << " " << j << " " << i << " " << i + poly_dof << " " << j + poly_dof << std::endl;
+        }
+    } else {
+        ss << poly_dof;
+        for (int i = 0; i < poly_dof; ++i) ss << " " << i + poly_dof;
+        ss << std::endl << poly_dof;
+        for (int i = poly_dof - 1; i >= 0; --i) ss << " " << i;
+        ss << std::endl;
+
+        for (int i = 0; i < poly_dof; ++i) {
+            const int j = (i + 1) % poly_dof;
+            ss << 4 << " " << i << " " << j << " " << j + poly_dof << " " << i + poly_dof << std::endl;
+        }
+    }
+
+    Polyhedron poly;
+    ss >> poly;
+    Nef_polyhedron nef_poly(poly);
+    CheckError(nef_poly.is_simple(), "The input is not a 2-manifold.");
+
+    // Boolean operation.
+    CheckError(op == '+' || op == '-', "We only support union and difference for now.");
+    if (op == '+') {
+        objects_ = (objects_ + nef_poly).regularization();
+    } else {
+        objects_ = (objects_ - nef_poly).regularization();
+    }
 }
 
 void Scene::SaveScene(const std::string& file_name) {
