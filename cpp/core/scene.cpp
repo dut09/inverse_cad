@@ -94,3 +94,15 @@ void Scene::SaveScene(const std::string& file_name) {
         output << objects_;
     }
 }
+
+void Scene::ShowTopologyInformation() {
+    // TODO.
+}
+
+void Scene::Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir) {
+    // TODO.
+}
+
+void Scene::DoBooleanOperation(const char op, const std::string& object0, const std::string& object1) {
+    // TODO.
+}

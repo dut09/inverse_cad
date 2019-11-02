@@ -20,6 +20,9 @@ public:
 
     void LoadScene(const std::string& file_name);
     void SaveScene(const std::string& file_name);
+    void ShowTopologyInformation();
+    void Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir);
+    void DoBooleanOperation(const char op, const std::string& object0, const std::string& object1);
 
 private:
     Nef_polyhedron objects_;
