@@ -21,5 +21,12 @@ include_directories("external/eigen-3.3.7")
 
 include_directories("cpp")
 
+# The core library.
+file(GLOB_RECURSE CORE_HEADER "cpp/core/*.h")
+file(GLOB_RECURSE CORE_CPP "cpp/core/*.cpp")
+add_library(inverse_cad_core SHARED ${CORE_HEADER} ${CORE_CPP})
+
+
 # Main program.
 add_executable(inverse_cad_demo "cpp/demo/main.cpp")
+target_link_libraries(inverse_cad_demo inverse_cad_core)
