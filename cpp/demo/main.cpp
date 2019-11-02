@@ -35,8 +35,25 @@ int main() {
             const std::string file_name = words[1];
             scene.LoadTarget(file_name);
         } else if (command_type == "ls") {
-            CheckError(word_num == 1, "This command does not accept any input.");
-            scene.ListInfo();
+            CheckError(word_num == 2, "This command needs 1 input.");
+            CheckError(words[1].size() >= 1u, "Names need to have at least 1 character.");
+            if (words[1] == "v") {
+                // List all vertex names and positions.
+                scene.ListAllVertices();
+            } else if (words[1] == "e") {
+                // List all edges and two endpoints.
+                scene.ListAllEdges();
+            } else if (words[1] == "f") {
+                // List all faces and edges, organized in a loop (or loops). Sample output:
+                // f1 2
+                // e0 e2 e4
+                // e1 e3 e6 e5
+                // This face f1 has two loops. The first loop has three edges (e0, e2, and e3) and
+                // the second loop has four edges (e1, e3, e6, e5).
+                scene.ListAllFaces();
+            } else {
+                CheckError(false, "ls does not recognize this input argument.");
+            }
         } else if (command_type == "extrude") {
             CheckError(word_num >= 15 && word_num % 3 == 0,
                 "The 'extrude' command requires at least 14 inputs.");

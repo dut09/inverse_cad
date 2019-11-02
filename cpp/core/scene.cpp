@@ -84,7 +84,15 @@ void Scene::LoadTarget(const std::string& file_name) {
     CheckError(target_.is_simple(), "The target is not a 2-manifold.");
 }
 
-void Scene::ListInfo() const {
+void Scene::ListAllVertices() {
+    // TODO.
+}
+
+void Scene::ListAllEdges() {
+    // TODO.
+}
+
+void Scene::ListAllFaces() {
     // TODO.
 }
 
