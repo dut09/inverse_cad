@@ -6,6 +6,16 @@ int main() {
     Scene scene;
 
     // Interactive examples.
+    // Following the steps below to try reconstructing a model.
+    // - load <nef3 file>                   # Load the scene from files.
+    // - load_target <nef3 file>            # Load a b-rep file that describes the model you want to reconstruct.
+    // - ls                                 # Show the target b-rep information: vertices, edges, and facets.
+    // - extrude ...                        # Use this command iteratively to reconstruct the model.
+    // - save <off file|nef3 file>          # Save the scene into files.
+    // - exit
+    // Some other useful functions:
+    // - convert <off file> <nef3 file>     # Convert a mesh to b-rep.
+    // - convert <nef3 file> <off file>     # Convert b-rep to a mesh.
     while (true) {
         // Get commands.
         std::string command;
@@ -16,17 +26,17 @@ int main() {
         const std::string command_type = words[0];
         if (command_type == "exit") {
             break;
-        } else if (command_type == "save") {
-            CheckError(word_num == 2, "The 'save' command requires 1 inputs.");
-            const std::string file_name = words[1];
-            scene.SaveScene(file_name);
         } else if (command_type == "load") {
-            CheckError(word_num == 2, "The 'load' command requires 1 inputs.");
+            CheckError(word_num == 2, "This command needs 1 input.");
             const std::string file_name = words[1];
             scene.LoadScene(file_name);
+        } else if (command_type == "load_target") {
+            CheckError(word_num == 2, "This command needs 1 input.");
+            const std::string file_name = words[1];
+            scene.LoadTarget(file_name);
         } else if (command_type == "ls") {
-            CheckError(word_num == 1, "The 'ls' command does not accept any input.");
-            scene.ShowTopologyInformation();
+            CheckError(word_num == 1, "This command does not accept any input.");
+            scene.ListInfo();
         } else if (command_type == "extrude") {
             CheckError(word_num >= 15 && word_num % 3 == 0,
                 "The 'extrude' command requires at least 14 inputs.");
@@ -46,6 +56,15 @@ int main() {
             const char op = words[word_num - 1][0];
             CheckError(op == '+' || op == '-', "The boolean operator has to be either + or -.");
             scene.Extrude(face_name, polygon, dir, op);
+        } else if (command_type == "save") {
+            CheckError(word_num == 2, "This command needs 1 input.");
+            const std::string file_name = words[1];
+            scene.SaveScene(file_name);
+        } else if (command_type == "convert") {
+            CheckError(word_num == 3, "This command nneds 2 inputs.");
+            const std::string in_file_name = words[1];
+            const std::string out_file_name = words[2];
+            scene.Convert(in_file_name, out_file_name);
         } else if (command_type == "help") {
             // TODO.
         }

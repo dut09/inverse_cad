@@ -73,14 +73,36 @@ void Scene::LoadScene(const std::string& file_name) {
     CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
     std::ifstream input(file_name);
     input >> objects_;
-    CheckError(objects_.is_simple(), "The current scene is not a 2-d manifold.");
+    CheckError(objects_.is_simple(), "The current scene is not a 2-manifold.");
+}
+
+void Scene::LoadTarget(const std::string& file_name) {
+    const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
+    CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
+    std::ifstream input(file_name);
+    input >> target_;
+    CheckError(target_.is_simple(), "The target is not a 2-manifold.");
+}
+
+void Scene::ListInfo() const {
+    // TODO.
+}
+
+void Scene::Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op) {
+    // TODO.
+    std::cout << "Picking face: " << face_name << std::endl;
+    for (const auto& v : polygon) {
+        std::cout << "poly: " << v.transpose() << std::endl;
+    }
+    std::cout << "dir: " << dir.transpose() << std::endl;
+    std::cout << "op: " << op << std::endl;
 }
 
 void Scene::SaveScene(const std::string& file_name) {
     // Check the type of the file name.
     const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
     CheckError(name_and_ext.size() == 2u && (name_and_ext[1] == "off" || name_and_ext[1] == "nef3"), "Invalid file name.");
-    CheckError(objects_.is_simple(), "The current scene is not a 2-d manifold.");
+    CheckError(objects_.is_simple(), "The current scene is not a 2-manifold.");
     PrepareToCreateFile(file_name);
 
     const std::string ext = name_and_ext[1];
@@ -95,16 +117,32 @@ void Scene::SaveScene(const std::string& file_name) {
     }
 }
 
-void Scene::ShowTopologyInformation() {
-    // TODO.
-}
+void Scene::Convert(const std::string& in_file_name, const std::string& out_file_name) const {
+    const std::string in_ext = GetFileExtension(in_file_name);
+    const std::string out_ext = GetFileExtension(out_file_name);
+    CheckError((in_ext == "off" && out_ext == "nef3") || (in_ext == "nef3" && out_ext == "off"), "Invalid input and output extensions");
+    PrepareToCreateFile(out_file_name);
 
-void Scene::Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op) {
-    // TODO.
-    std::cout << "Picking face: " << face_name << std::endl;
-    for (const auto& v : polygon) {
-        std::cout << "poly: " << v.transpose() << std::endl;
+    if (in_ext == "off") {
+        // off -> nef3.
+        std::ifstream in_file(in_file_name);
+        Polyhedron mesh;
+        read_off(in_file, mesh);
+        Nef_polyhedron poly(mesh);
+        CheckError(poly.is_simple(), "The input is not a 2-manifold.");
+
+        std::ofstream out_file(out_file_name);
+        out_file << poly;
+    } else {
+        // nef3 -> off.
+        std::ifstream in_file(in_file_name);
+        Nef_polyhedron poly;
+        in_file >> poly;
+        CheckError(poly.is_simple(), "The input is not a 2-manifold.");
+
+        Polyhedron mesh;
+        poly.convert_to_polyhedron(mesh);
+        std::ofstream out_file(out_file_name);
+        write_off(out_file, mesh);
     }
-    std::cout << "dir: " << dir.transpose() << std::endl;
-    std::cout << "op: " << op << std::endl;
 }

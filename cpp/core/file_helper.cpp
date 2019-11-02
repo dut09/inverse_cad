@@ -127,3 +127,9 @@ const bool FileExist(const std::string& file_path) {
     fin.close();
     return exists;
 }
+
+const std::string GetFileExtension(const std::string& file_name) {
+    const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
+    CheckError(name_and_ext.size() == 2u, "File name must have an extension.");
+    return name_and_ext[1];
+}

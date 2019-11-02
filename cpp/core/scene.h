@@ -19,11 +19,14 @@ public:
     Scene();
 
     void LoadScene(const std::string& file_name);
-    void SaveScene(const std::string& file_name);
-    void ShowTopologyInformation();
+    void LoadTarget(const std::string& file_name);
+    void ListInfo() const;
     void Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op);
+    void SaveScene(const std::string& file_name);
+    void Convert(const std::string& in_file_name, const std::string& out_file_name) const;
 
 private:
+    Nef_polyhedron target_;
     Nef_polyhedron objects_;
 };
 

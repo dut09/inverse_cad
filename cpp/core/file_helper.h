@@ -22,5 +22,6 @@ const std::string AppendFolderToPath(const std::string& folder,
 const std::string GetParentFolder(const std::string path);
 void PrepareToCreateFile(const std::string& file_path);
 const bool FileExist(const std::string& file_path);
+const std::string GetFileExtension(const std::string& file_name);
 
 #endif
