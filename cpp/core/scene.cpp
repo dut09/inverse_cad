@@ -99,10 +99,12 @@ void Scene::ShowTopologyInformation() {
     // TODO.
 }
 
-void Scene::Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir) {
+void Scene::Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op) {
     // TODO.
-}
-
-void Scene::DoBooleanOperation(const char op, const std::string& object0, const std::string& object1) {
-    // TODO.
+    std::cout << "Picking face: " << face_name << std::endl;
+    for (const auto& v : polygon) {
+        std::cout << "poly: " << v.transpose() << std::endl;
+    }
+    std::cout << "dir: " << dir.transpose() << std::endl;
+    std::cout << "op: " << op << std::endl;
 }

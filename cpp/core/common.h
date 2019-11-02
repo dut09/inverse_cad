@@ -5,6 +5,7 @@
 
 const real ToReal(const double v);
 const double ToDouble(const real v);
+const real StrToReal(const std::string& v);
 
 // Colorful print.
 const std::string GreenHead();

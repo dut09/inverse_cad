@@ -28,15 +28,24 @@ int main() {
             CheckError(word_num == 1, "The 'ls' command does not accept any input.");
             scene.ShowTopologyInformation();
         } else if (command_type == "extrude") {
-            CheckError(word_num >= 14 && (word_num - 2) % 3 == 0,
-                "The 'extrude' command requires at least 13 inputs.");
-            // TODO.
-        } else if (command_type == "bool") {
-            CheckError(word_num == 4 && words[1].size() == 1u, "The 'bool' command requires 4 inputs.");
-            const char op = words[1][0];
-            const std::string& ob0 = words[2];
-            const std::string& ob1 = words[3];
-            scene.DoBooleanOperation(op, ob0, ob1);
+            CheckError(word_num >= 15 && word_num % 3 == 0,
+                "The 'extrude' command requires at least 14 inputs.");
+            // extrude <face name> <x y z> <x y z> ... <x y z> <dx, dy dz> <+|->.
+            const std::string face_name = words[1];
+            const int poly_dof = static_cast<int>((word_num - 6) / 3);
+            std::vector<Vector3r> polygon(poly_dof);
+            for (int i = 0; i < poly_dof; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    polygon[i](j) = StrToReal(words[2 + i * 3 + j]);
+                }
+            }
+            Vector3r dir(StrToReal(words[2 + 3 * poly_dof]),
+                StrToReal(words[2 + 3 * poly_dof + 1]),
+                StrToReal(words[2 + 3 * poly_dof + 2]));
+            CheckError(words[word_num - 1].size() == 1u, "The last input has to be a char.");
+            const char op = words[word_num - 1][0];
+            CheckError(op == '+' || op == '-', "The boolean operator has to be either + or -.");
+            scene.Extrude(face_name, polygon, dir, op);
         } else if (command_type == "help") {
             // TODO.
         }

@@ -8,6 +8,10 @@ const double ToDouble(const real v) {
     return static_cast<double>(v);
 }
 
+const real StrToReal(const std::string& v) {
+    return ToReal(std::stod(v));
+}
+
 const std::string GreenHead() {
     return "\x1b[6;30;92m";
 }

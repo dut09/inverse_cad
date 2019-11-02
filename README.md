@@ -1,5 +1,5 @@
 # System requirements
-- Ubuntu 16.04 or 18.04
+- Ubuntu 18.04
 
 # Installation
 - Clone the repo:
