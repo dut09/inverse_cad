@@ -16,8 +16,7 @@
 #include <vector>
 #include <sys/time.h>
 // Eigen.
-#include <Eigen/Dense>
-// CGAL.
+#include "Eigen/Dense"
 using real = double;
 
 #define SAFETY_CHECK    1
@@ -30,5 +29,4 @@ using Vector3r = Eigen::Matrix<real, 3, 1>;
 using Vector4r = Eigen::Matrix<real, 4, 1>;
 using VectorXr = Eigen::Matrix<real, -1, 1>;
 
-// CGAL helper.
 #endif
