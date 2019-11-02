@@ -85,7 +85,20 @@ void Scene::LoadTarget(const std::string& file_name) {
 }
 
 void Scene::ListAllVertices() {
-    // TODO.
+    const int num_vertices = static_cast<int>(objects_.number_of_vertices());
+    std::cout << "Vertex number " << num_vertices << std::endl;
+    int idx = 0;
+    Nef_polyhedron::Vertex_const_iterator iter; 
+    for (iter = objects_.vertices_begin(); iter != objects_.vertices_end(); ++iter) {
+        const auto& point = iter->point();
+        // We can use std::cout << point to print its value directly but the code below shows better how
+        // to access data members of a point.
+        const real x = CGAL::to_double(point.x());
+        const real y = CGAL::to_double(point.y());
+        const real z = CGAL::to_double(point.z());
+        std::cout << "v" << idx << "\t" << x << "\t" << y << "\t" << z << std::endl;
+        ++idx;
+    }
 }
 
 void Scene::ListAllEdges() {
