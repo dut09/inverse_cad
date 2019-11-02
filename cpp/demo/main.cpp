@@ -17,9 +17,13 @@ int main() {
         if (command_type == "exit") {
             break;
         } else if (command_type == "save") {
-            CheckError(word_num == 2, "The 'save' command requires two inputs.");
+            CheckError(word_num == 2, "The 'save' command requires one inputs.");
             const std::string file_name = words[1];
             scene.SaveScene(file_name);
+        } else if (command_type == "load") {
+            CheckError(word_num == 2, "The 'load' command requires one inputs.");
+            const std::string file_name = words[1];
+            scene.LoadScene(file_name);
         }
     }
     return 0;

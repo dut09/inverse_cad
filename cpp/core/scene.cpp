@@ -69,7 +69,11 @@ Scene::Scene() {
 }
 
 void Scene::LoadScene(const std::string& file_name) {
-    // TODO.
+    const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
+    CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
+    std::ifstream input(file_name);
+    input >> objects_;
+    CheckError(objects_.is_simple(), "The current scene is not a 2-d manifold.");
 }
 
 void Scene::SaveScene(const std::string& file_name) {
@@ -86,5 +90,7 @@ void Scene::SaveScene(const std::string& file_name) {
         std::ofstream output(file_name);
         write_off(output, poly);
     } else {
+        std::ofstream output(file_name);
+        output << objects_;
     }
 }
