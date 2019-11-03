@@ -18,6 +18,7 @@ int main() {
     // - convert <nef3 file> <off file>     # Convert b-rep to a mesh.
     while (true) {
         // Get commands.
+        std::cout << ">>> ";
         std::string command;
         std::getline(std::cin, command);
         std::vector<std::string> words = SplitString(command);

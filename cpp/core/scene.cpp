@@ -191,7 +191,7 @@ void Scene::ListAllEdges() {
     int idx = 0;
     for (const auto& e : target_half_edges_) {
         std::cout << "e" << idx << "\tv" << e.first << "\tv" << e.second << "\ttwin\t"
-            << target_half_edge_twins_[idx] << std::endl;
+            << "e" << target_half_edge_twins_[idx] << std::endl;
         ++idx;
     }
 }
@@ -205,7 +205,7 @@ void Scene::ListAllFaces() {
             for (const int v : fc) std::cout << "v" << v << "\t";
             std::cout << std::endl;
         }
-        std::cout << "twin\t" << target_half_facet_twins_[idx] << std::endl;
+        std::cout << "twin\t" << "f" << target_half_facet_twins_[idx] << std::endl;
         ++idx;
     }
 }
