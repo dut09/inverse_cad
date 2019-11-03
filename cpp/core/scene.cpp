@@ -72,6 +72,7 @@ void Scene::LoadScene(const std::string& file_name) {
     const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
     CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
     std::ifstream input(file_name);
+    objects_ = Nef_polyhedron();    // Clear the original polyhedron.
     input >> objects_;
     CheckError(objects_.is_simple(), "The current scene is not a 2-manifold.");
 
@@ -111,6 +112,123 @@ void Scene::LoadScene(const std::string& file_name) {
     for (int i = 0; i < half_edge_num; ++i) {
         target_half_edge_twins_[i] = GetHalfEdgeIndex(target_half_edges_[i].second, target_half_edges_[i].first);
     }
+
+    // Construct the face not from the polyhedron but from the file (CGAL's data structure is quite hard to understand...).
+    target_half_facets_.clear();
+    target_half_facet_twins_.clear();
+    const int half_facet_num = static_cast<int>(objects_.number_of_halffacets());
+    target_half_facets_.reserve(half_facet_num);
+    target_half_facet_twins_.resize(half_facet_num, -1);
+
+    // Now parse the input file.
+    std::ifstream in_file(file_name);
+    std::string line;
+    int line_idx = 0;
+    int shalf_edge_num = 0;
+    int volume_num = 0;
+    std::vector<int> shalf_edge_to_vertex;
+    int vertex_begin = 0;
+    int half_edge_begin = 0;
+    int half_facet_begin = 0;
+    int volume_begin = 0;
+    int shalf_edge_begin = 0;
+    std::vector<std::vector<int>> shalf_edge_in_half_facets(half_facet_num);
+    std::vector<int> shalf_edge_next;
+    while (std::getline(in_file, line)) {
+        if (line_idx < 2) {
+            // Header. Do nothing.
+        } else if (line_idx == 2) {
+            CheckError(StartsWith(line, "vertices"), "Expect to see vertices.");
+            CheckError(std::stoi(SplitString(line)[1]) == vertex_num, "Inconsistent vertex number.");
+        } else if (line_idx == 3) {
+            CheckError(StartsWith(line, "halfedges"), "Expect to see halfedges.");
+            CheckError(std::stoi(SplitString(line)[1]) == half_edge_num, "Inconsistent halfedge number.");
+        } else if (line_idx == 4) {
+            CheckError(StartsWith(line, "facets"), "Expect to see facets.");
+            CheckError(std::stoi(SplitString(line)[1]) == half_facet_num, "Inconsistent facets number.");
+        } else if (line_idx == 5) {
+            CheckError(StartsWith(line, "volumes"), "Expect to see volumes.");
+            volume_num = std::stoi(SplitString(line)[1]);
+        } else if (line_idx == 6) {
+            CheckError(StartsWith(line, "shalfedges"), "Expect to see shalfedges.");
+            shalf_edge_num = std::stoi(SplitString(line)[1]);
+            shalf_edge_to_vertex.clear();
+            shalf_edge_to_vertex.resize(shalf_edge_num, -1);
+            shalf_edge_next.clear();
+            shalf_edge_next.resize(shalf_edge_num, -1);
+        } else if (line_idx == 7) {
+            CheckError(StartsWith(line, "shalfloops"), "Expect to see shalfloops.");
+        } else if (line_idx == 8) {
+            CheckError(StartsWith(line, "sfaces"), "Expect to see sfaces.");
+            vertex_begin = 9;
+            half_edge_begin = vertex_begin + vertex_num;
+            half_facet_begin = half_edge_begin + half_edge_num;
+            volume_begin = half_facet_begin + half_facet_num;
+            shalf_edge_begin = volume_begin + volume_num;
+        } else if (line_idx >= vertex_begin && line_idx < half_edge_begin) {
+            // Parse vertices.
+            std::istringstream iss(line);
+            int vid, dummy;
+            int sbegin, send;
+            char ch;
+            iss >> vid;
+            CheckError(vid == line_idx - vertex_begin, "vid mismatches.");
+            iss >> ch;  // '{'
+            iss >> dummy >> dummy >> ch; // Half edges.
+            iss >> sbegin >> send;
+            for (int i = sbegin; i <= send; ++i) {
+                shalf_edge_to_vertex[i] = vid;
+            }
+        } else if (line_idx >= half_edge_begin && line_idx < half_facet_begin) {
+            // Half edges. Do nothing for now.
+        } else if (line_idx >= half_facet_begin && line_idx < volume_begin) {
+            // Half facets. Do the real work here.
+            // Sample line: 10 { 11, 12 83 , , 0 | 0 1 0 -1 } 1
+            line = line.substr(0, line.find(',', line.find(',') + 1));
+            std::istringstream iss(line);
+            int fid;
+            iss >> fid;
+            CheckError(fid == line_idx - half_facet_begin, "fid mismatches.");
+            char ch;
+            iss >> ch;
+            iss >> target_half_facet_twins_[fid];
+            line = line.substr(line.find(',') + 1);
+            const std::vector<std::string> words = SplitString(line);
+            shalf_edge_in_half_facets[fid].clear();
+            for (const auto& w : words) shalf_edge_in_half_facets[fid].push_back(std::stoi(w));
+        } else if (line_idx >= volume_begin && line_idx < shalf_edge_begin) {
+            // Volumes. Skip.
+        } else if (line_idx >= shalf_edge_begin && line_idx < shalf_edge_begin + shalf_edge_num) {
+            // Shalf edges.
+            // Sample line: 0 { 1, 4, 2, 0, 1, 26, 18, 6 | 0 1 0 0 } 1
+            std::istringstream iss(line);
+            int seid;
+            iss >> seid;
+            CheckError(seid == line_idx - shalf_edge_begin, "seid mismatches.");
+            char ch;
+            iss >> ch;  // '{'
+            int dummy;
+            for (int i = 0; i < 6; ++i) iss >> dummy >> ch;
+            iss >> shalf_edge_next[seid];
+        } else {
+            // We don't care about anything left. Skip.
+        }
+        ++line_idx;
+    }
+    for (const auto& fc : shalf_edge_in_half_facets) {
+        std::vector<std::vector<int>> fc_idx;
+        for (const int v : fc) {
+            std::vector<int> vc;
+            vc.push_back(shalf_edge_to_vertex[v]);
+            int v_next = shalf_edge_next[v];
+            while (v_next != v) {
+                vc.push_back(shalf_edge_to_vertex[v_next]);
+                v_next = shalf_edge_next[v_next];
+            }
+            fc_idx.push_back(vc);
+        }
+        target_half_facets_.push_back(fc_idx);
+    }
 }
 
 void Scene::LoadTarget(const std::string& file_name) {
@@ -142,7 +260,17 @@ void Scene::ListAllEdges() {
 }
 
 void Scene::ListAllFaces() {
-    // TODO.
+    std::cout << "Face number " << target_half_facets_.size() << std::endl;
+    int idx = 0;
+    for (const auto& f : target_half_facets_) {
+        std::cout << "f" << idx << "\t" << f.size() << std::endl;
+        for (const auto& fc : f) {
+            for (const int v : fc) std::cout << "v" << v << "\t";
+            std::cout << std::endl;
+        }
+        std::cout << "twin\t" << target_half_facet_twins_[idx] << std::endl;
+        ++idx;
+    }
 }
 
 void Scene::Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op) {
@@ -273,10 +401,6 @@ const int Scene::GetVertexIndex(const Vector3r& vertex) const {
     return idx;
 }
 
-const std::string Scene::GetVertexName(const Vector3r& vertex) const {
-    return "v" + std::to_string(GetVertexIndex(vertex));
-}
-
 const int Scene::GetHalfEdgeIndex(const int source, const int target) const {
     int idx = 0;
     for (const auto& e : target_half_edges_) {
@@ -284,8 +408,4 @@ const int Scene::GetHalfEdgeIndex(const int source, const int target) const {
         ++idx;
     }
     return idx;
-}
-
-const std::string Scene::GetHalfEdgeName(const int source, const int target) const {
-    return "e" + std::to_string(GetHalfEdgeIndex(source, target));
 }

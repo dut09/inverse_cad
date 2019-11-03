@@ -77,6 +77,25 @@ const std::vector<std::string> SplitString(const std::string& str, const char se
     return strs;
 }
 
+const bool StartsWith(const std::string& str, const std::string& substr) {
+    if (str.size() < substr.size()) return false;
+    const int n = static_cast<int>(substr.size());
+    for (int i = 0; i < n; ++i) {
+        if (str[i] != substr[i]) return false;
+    }
+    return true;
+}
+
+const bool EndsWith(const std::string& str, const std::string& substr) {
+    if (str.size() < substr.size()) return false;
+    const int n = static_cast<int>(substr.size());
+    const int m = static_cast<int>(str.size());
+    for (int i = 0; i < n; ++i) {
+        if (str[m - n + i] != substr[i]) return false;
+    }
+    return true;
+}
+
 void CheckError(const bool condition, const std::string& error_message) {
 #ifdef SAFETY_CHECK
     if (!condition) {

@@ -31,16 +31,14 @@ private:
     Nef_polyhedron target_;
     Nef_polyhedron objects_;
 
-    // Data structure for the target. After reading CGAL's code, I tend to believe some info is not provided so I have
-    // to maintain them by myself.
-    std::vector<Vector3r> target_vertices_;
     const int GetVertexIndex(const Vector3r& vertex) const;
-    const std::string GetVertexName(const Vector3r& vertex) const;
-
-    std::vector<std::pair<int, int>> target_half_edges_;
     const int GetHalfEdgeIndex(const int source, const int target) const;
-    const std::string GetHalfEdgeName(const int source, const int target) const;
+
+    std::vector<Vector3r> target_vertices_;
+    std::vector<std::pair<int, int>> target_half_edges_;
     std::vector<int> target_half_edge_twins_;
+    std::vector<std::vector<std::vector<int>>> target_half_facets_;
+    std::vector<int> target_half_facet_twins_;
 };
 
 #endif

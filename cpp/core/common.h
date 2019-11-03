@@ -25,6 +25,8 @@ void Toc(const std::string& message);
 
 // String helper.
 const std::vector<std::string> SplitString(const std::string& str, const char separator = ' ');
+const bool StartsWith(const std::string& str, const std::string& substr);
+const bool EndsWith(const std::string& str, const std::string& substr);
 
 // Error check.
 void CheckError(const bool condition, const std::string& error_message);
