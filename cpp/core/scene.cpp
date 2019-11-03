@@ -11,14 +11,23 @@ void Scene::LoadScene(const std::string& file_name) {
     objects_ = Nef_polyhedron();    // Clear the original polyhedron.
     input >> objects_;
     CheckError(objects_.is_simple(), "The current scene is not a 2-manifold.");
+}
+
+void Scene::LoadTarget(const std::string& file_name) {
+    const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
+    CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
+    std::ifstream input(file_name);
+    target_ = Nef_polyhedron();
+    input >> target_;
+    CheckError(target_.is_simple(), "The target is not a 2-manifold.");
 
     // Now construct the data structure. The code below is quite inefficient. However, since we are almost always
     // dealing with tiny scenes, I think the inefficiency is tolerable.
     target_vertices_.clear();
-    const int vertex_num = static_cast<int>(objects_.number_of_vertices());
+    const int vertex_num = static_cast<int>(target_.number_of_vertices());
     target_vertices_.reserve(vertex_num);
     Nef_polyhedron::Vertex_const_iterator v_iter;
-    for (v_iter = objects_.vertices_begin(); v_iter != objects_.vertices_end(); ++v_iter) {
+    for (v_iter = target_.vertices_begin(); v_iter != target_.vertices_end(); ++v_iter) {
         const real x = CGAL::to_double(v_iter->point().x());
         const real y = CGAL::to_double(v_iter->point().y());
         const real z = CGAL::to_double(v_iter->point().z());
@@ -28,11 +37,11 @@ void Scene::LoadScene(const std::string& file_name) {
 
     target_half_edges_.clear();
     target_half_edge_twins_.clear();
-    const int half_edge_num = static_cast<int>(objects_.number_of_halfedges());
+    const int half_edge_num = static_cast<int>(target_.number_of_halfedges());
     target_half_edges_.reserve(half_edge_num);
     target_half_edge_twins_.reserve(half_edge_num);
     Nef_polyhedron::Halfedge_const_iterator e_iter;
-    for (e_iter = objects_.halfedges_begin(); e_iter != objects_.halfedges_end(); ++e_iter) {
+    for (e_iter = target_.halfedges_begin(); e_iter != target_.halfedges_end(); ++e_iter) {
         const real sx = CGAL::to_double(e_iter->source()->point().x());
         const real sy = CGAL::to_double(e_iter->source()->point().y());
         const real sz = CGAL::to_double(e_iter->source()->point().z());
@@ -52,7 +61,7 @@ void Scene::LoadScene(const std::string& file_name) {
     // Construct the face not from the polyhedron but from the file (CGAL's data structure is quite hard to understand...).
     target_half_facets_.clear();
     target_half_facet_twins_.clear();
-    const int half_facet_num = static_cast<int>(objects_.number_of_halffacets());
+    const int half_facet_num = static_cast<int>(target_.number_of_halffacets());
     target_half_facets_.reserve(half_facet_num);
     target_half_facet_twins_.resize(half_facet_num, -1);
 
@@ -167,14 +176,6 @@ void Scene::LoadScene(const std::string& file_name) {
     }
 }
 
-void Scene::LoadTarget(const std::string& file_name) {
-    const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
-    CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
-    std::ifstream input(file_name);
-    input >> target_;
-    CheckError(target_.is_simple(), "The target is not a 2-manifold.");
-}
-
 void Scene::ListAllVertices() {
     std::cout << "Vertex number " << target_vertices_.size() << std::endl;
     int idx = 0;
@@ -275,6 +276,16 @@ void Scene::Extrude(const std::vector<Vector3r>& polygon, const Vector3r& dir, c
     } else {
         objects_ = (objects_ - nef_poly).regularization();
     }
+}
+
+void Scene::ExtrudeFromRef(const int f_idx, const int loop_idx,
+    const int v_source, const int v_target, const char op) {
+    std::vector<Vector3r> polygon;
+    for (const int vid : target_half_facets_[f_idx][loop_idx]) {
+        polygon.push_back(target_vertices_[vid]);
+    }
+    const Vector3r dir = target_vertices_[v_target] - target_vertices_[v_source];
+    Extrude(polygon, dir, op);
 }
 
 void Scene::SaveScene(const std::string& file_name) {

@@ -28,8 +28,12 @@ Here `sofa.nef3` is the b-rep file and `sofa.off` has the mesh information. You 
 ```
 cd build
 ./inverse_cad_demo
-load sofa.nef3
+load_target sofa.nef3
 ls v
 ls e
 ls f
+extrude_ref f2 0 v0 v6 +
+extrude_ref f16 0 v14 v11 -
+save sofa_reconstructed.off
 ```
+You can then compare `sofa.off` and `sofa_reconstructed.off` in Meshlab. They should be identical.

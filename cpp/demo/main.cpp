@@ -72,6 +72,24 @@ int main() {
             const char op = words[word_num - 1][0];
             CheckError(op == '+' || op == '-', "The boolean operator has to be either + or -.");
             scene.Extrude(polygon, dir, op);
+        } else if (command_type == "extrude_ref") {
+            CheckError(word_num == 6, "The 'extrude_ref' command requires 5 inputs.");
+            const std::string f_name = words[1];
+            CheckError(StartsWith(f_name, "f"), "Invalid facet name.");
+            const int f_idx = std::stoi(f_name.substr(1));
+            const int loop_idx = std::stoi(words[2]);
+            
+            const std::string v_source = words[3];
+            CheckError(StartsWith(v_source, "v"), "Invalid vertex name.");
+            const int source_idx = std::stoi(v_source.substr(1));
+            const std::string v_target = words[4];
+            CheckError(StartsWith(v_target, "v"), "Invalid vertex name.");
+            const int target_idx = std::stoi(v_target.substr(1));
+
+            CheckError(words[5].size() == 1u, "The last input has to be a char.");
+            const char op = words[5][0];
+            CheckError(op == '+' || op == '-', "The boolean operator has to be either + or -.");
+            scene.ExtrudeFromRef(f_idx, loop_idx, source_idx, target_idx, op);
         } else if (command_type == "save") {
             CheckError(word_num == 2, "This command needs 1 input.");
             const std::string file_name = words[1];
