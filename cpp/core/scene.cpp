@@ -74,6 +74,43 @@ void Scene::LoadScene(const std::string& file_name) {
     std::ifstream input(file_name);
     input >> objects_;
     CheckError(objects_.is_simple(), "The current scene is not a 2-manifold.");
+
+    // Now construct the data structure. The code below is quite inefficient. However, since we are almost always
+    // dealing with tiny scenes, I think the inefficiency is tolerable.
+    target_vertices_.clear();
+    const int vertex_num = static_cast<int>(objects_.number_of_vertices());
+    target_vertices_.reserve(vertex_num);
+    Nef_polyhedron::Vertex_const_iterator v_iter;
+    for (v_iter = objects_.vertices_begin(); v_iter != objects_.vertices_end(); ++v_iter) {
+        const real x = CGAL::to_double(v_iter->point().x());
+        const real y = CGAL::to_double(v_iter->point().y());
+        const real z = CGAL::to_double(v_iter->point().z());
+        Vector3r p(x, y, z);
+        target_vertices_.push_back(p);
+    }
+
+    target_half_edges_.clear();
+    target_half_edge_twins_.clear();
+    const int half_edge_num = static_cast<int>(objects_.number_of_halfedges());
+    target_half_edges_.reserve(half_edge_num);
+    target_half_edge_twins_.reserve(half_edge_num);
+    Nef_polyhedron::Halfedge_const_iterator e_iter;
+    for (e_iter = objects_.halfedges_begin(); e_iter != objects_.halfedges_end(); ++e_iter) {
+        const real sx = CGAL::to_double(e_iter->source()->point().x());
+        const real sy = CGAL::to_double(e_iter->source()->point().y());
+        const real sz = CGAL::to_double(e_iter->source()->point().z());
+        const int source_idx = GetVertexIndex(Vector3r(sx, sy, sz));
+
+        const real tx = CGAL::to_double(e_iter->target()->point().x());
+        const real ty = CGAL::to_double(e_iter->target()->point().y());
+        const real tz = CGAL::to_double(e_iter->target()->point().z());
+        const int target_idx = GetVertexIndex(Vector3r(tx, ty, tz));
+        target_half_edges_.push_back(std::make_pair(source_idx, target_idx));
+    }
+    // Construct the twin edges.
+    for (int i = 0; i < half_edge_num; ++i) {
+        target_half_edge_twins_[i] = GetHalfEdgeIndex(target_half_edges_[i].second, target_half_edges_[i].first);
+    }
 }
 
 void Scene::LoadTarget(const std::string& file_name) {
@@ -85,24 +122,23 @@ void Scene::LoadTarget(const std::string& file_name) {
 }
 
 void Scene::ListAllVertices() {
-    const int num_vertices = static_cast<int>(objects_.number_of_vertices());
-    std::cout << "Vertex number " << num_vertices << std::endl;
+    std::cout << "Vertex number " << target_vertices_.size() << std::endl;
     int idx = 0;
-    Nef_polyhedron::Vertex_const_iterator iter; 
-    for (iter = objects_.vertices_begin(); iter != objects_.vertices_end(); ++iter) {
-        const auto& point = iter->point();
-        // We can use std::cout << point to print its value directly but the code below shows better how
-        // to access data members of a point.
-        const real x = CGAL::to_double(point.x());
-        const real y = CGAL::to_double(point.y());
-        const real z = CGAL::to_double(point.z());
+    for (const auto& v : target_vertices_) {
+        const real x = v.x(), y = v.y(), z = v.z();
         std::cout << "v" << idx << "\t" << x << "\t" << y << "\t" << z << std::endl;
         ++idx;
     }
 }
 
 void Scene::ListAllEdges() {
-    // TODO.
+    std::cout << "Edge number " << target_half_edges_.size() << std::endl;
+    int idx = 0;
+    for (const auto& e : target_half_edges_) {
+        std::cout << "e" << idx << "\tv" << e.first << "\tv" << e.second << "\ttwin\t"
+            << target_half_edge_twins_[idx] << std::endl;
+        ++idx;
+    }
 }
 
 void Scene::ListAllFaces() {
@@ -226,4 +262,30 @@ void Scene::Convert(const std::string& in_file_name, const std::string& out_file
         std::ofstream out_file(out_file_name);
         write_off(out_file, mesh);
     }
+}
+
+const int Scene::GetVertexIndex(const Vector3r& vertex) const {
+    int idx = 0;
+    for (const auto& v : target_vertices_) {
+        if (v.x() == vertex.x() && v.y() == vertex.y() && v.z() == vertex.z()) break;
+        ++idx;
+    }
+    return idx;
+}
+
+const std::string Scene::GetVertexName(const Vector3r& vertex) const {
+    return "v" + std::to_string(GetVertexIndex(vertex));
+}
+
+const int Scene::GetHalfEdgeIndex(const int source, const int target) const {
+    int idx = 0;
+    for (const auto& e : target_half_edges_) {
+        if (e.first == source && e.second == target) break;
+        ++idx;
+    }
+    return idx;
+}
+
+const std::string Scene::GetHalfEdgeName(const int source, const int target) const {
+    return "e" + std::to_string(GetHalfEdgeIndex(source, target));
 }
