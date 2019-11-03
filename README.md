@@ -6,24 +6,30 @@
 ```
 git clone https://github.com/dut09/inverse_cad
 ```
-- Install CUDA 10.0: Open https://developer.nvidia.com/cuda-10.0-download-archive and select your system to download the installer. Follow the instructions to install CUDA 10.0. Make sure you can see CUDA 10.0 by running `nvcc --version` before you proceed.
-- Install miniconda:
-```
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
-- Create a conda environment:
-```
-conda env create -f environment.yml
-```
-- Activate the conda environment:
-```
-conda activate sim_playground
-```
 - Run `install.sh` from the root folder:
 ```
 ./install.sh
 ```
 
 # How to run
-TODO
+## Create Armando's sofa:
+```
+cd build
+./inverse_cad_demo
+extrude 1 0 0 1 1 0 -1 1 0 -1 0.5 0 0 0.5 0 0 0 0 0 0.1 1 +
+extrude -0.8 0.2 1 0.8 0.2 1 0.8 0.8 1 -0.8 0.8 1 0 0 -0.5 -
+save sofa.nef3
+save sofa.off
+exit
+```
+Here `sofa.nef3` is the b-rep file and `sofa.off` has the mesh information. You can then use `meshlab sofa.off` to visualize the shape.
+
+## Reconstruct Armando's sofa:
+```
+cd build
+./inverse_cad_demo
+load sofa.nef3
+ls v
+ls e
+ls f
+```

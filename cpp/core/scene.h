@@ -23,7 +23,7 @@ public:
     void ListAllVertices();
     void ListAllEdges();
     void ListAllFaces();
-    void Extrude(const std::string& face_name, const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op);
+    void Extrude(const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op);
     void SaveScene(const std::string& file_name);
     void Convert(const std::string& in_file_name, const std::string& out_file_name) const;
 
