@@ -135,3 +135,22 @@ cd build
 >>> exit
 ```
 You can then compare `sofa.off` and `sofa_reconstructed.off` in Meshlab. They should be identical.
+
+## Python bindings
+```
+python 
+Python 3.7.3 (default, Mar 27 2019, 22:11:17) 
+[GCC 7.3.0] :: Anaconda, Inc. on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from scene import *
+>>> s = Scene()
+>>> s.LoadTarget("example/sofa.nef3")
+>>> s.ListAllFaces()
+Face number 26
+f0	1
+v9	v17	v13	v12	v11	v18	v10	v6	v7	v8	
+twin	f1
+f1	1
+...
+```
+Bindings complement of `swig`, which in theory means that they should exactly mirror the C++ implementation with regards to naming etc.
