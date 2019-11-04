@@ -23,7 +23,7 @@ conda activate inverse_cad
 ```
 >>> load sofa.nef3
 ```
-will overwrite the current polyhedron with the one defined in `sofa.nef3`.
+will overwrite the polyhedron in the canvas-so-far with the one defined in `sofa.nef3`.
 
 The `save` command can take as input either a `.nef3` or `.off` file. For example, you can do
 ```
@@ -33,18 +33,18 @@ or
 ```
 >>> save sofa.off
 ```
-to save the current polyhedron into either a `.nef3` file which can be reloaded later or a `.off` file which can be used for visualization.
+to save the polyhedron in the canvas-so-far into either a `.nef3` file which can be reloaded later or a `.off` file which can be used for visualization.
 
 We also present a `load_target` command to load a `.nef3` file describing the target polyhedron, i.e., the one that we want our polyhedron to eventually match after applying a finite number of commands. For example,
 ```
 >>> load_target sofa.nef3
 ```
-will read the full description of the polyhedron in `sofa.nef3` and set it as our target polyhedron. This command won't modify the current polyhedron.
+will read the full description of the polyhedron in `sofa.nef3` and set it as our target polyhedron. This command won't modify the polyhedron in the canvas-so-far.
 
 ### Exploring topological information
-We provide `ls v`, `ls e`, and `ls f` to display the vertex, edge, and facet information about the target polyhedron respectively.
+We provide `ls v`, `ls e`, and `ls f` to display the vertex, edge, and facet information of the polyhedron in the canvas-so-far respectively. Additionally, you can add the `--target` flag (for example, `ls v --target`) to display the same information of the *target* polyhedron.
 
-The `ls v` command starts with a line of `Vertex number N` where `N` is the number of vertices in the target polyhedron. It is followed by `N` lines, one for each vertex, describing the name of each vertex and its 3D coordinates. Here is a sample output:
+The `ls v` command starts with a line of `Vertex number N` where `N` is the number of vertices of the polyhedron in the canvas-so-far. It is followed by `N` lines, one for each vertex, describing the name of each vertex and its 3D coordinates. Here is a sample output:
 ```
 >>> ls v
 Vertex number 22
@@ -71,7 +71,7 @@ e65     v21     v19     twin    e58
 ```
 As in the case of vertices, you can assume the name of a half edge always starts with an `e` followed by an index number increasing from `0`.
 
-Finally, the `ls f` command shows information about the half facets. For each facet in the target polyhedron, two half facets are created with opposite orientations. A half facet has a unique name, a twin half facet, and most importantly, a list of vertex cycles that defines the boundary of this facet. Note that a facet can have multiple vertex cycles if it contains one or more holes. Here is a sample output:
+Finally, the `ls f` command shows information about the half facets. For each facet of the polyhedron in the canvas-so-far, two half facets are created with opposite orientations. A half facet has a unique name, a twin half facet, and most importantly, a list of vertex cycles that defines the boundary of this facet. Note that a facet can have multiple vertex cycles if it contains one or more holes. Here is a sample output:
 ```
 >>> ls f
 Face number 26
@@ -86,17 +86,19 @@ twin    f0
 Here the number `N` after the facet name shows how many vertex cycles this facet contains. It is then immediately followed by `N` lines, one for each vertex cycle, showing the vertex names in that cycle.
 
 ### Modeling
-We present two commands `extrude` and `extrude_ref` to model the shape. `extrude` takes as input a list of 3D points that define a polygon on a plane, a 3D direction, and a `+` or `-` indicating whether the extrusion should be merged into or subtracted from the current polyhedron. For example:
+We present two commands `extrude` and `extrude_ref` to model the shape. `extrude` takes as input a list of 3D points that define a polygon on a plane, a 3D direction, and a `+` or `-` indicating whether the extrusion should be merged into or subtracted from the polyhedron in the canvas-so-far. For example:
 ```
 extrude 1 0 0 1 1 0 -1 1 0 -1 0.5 0 0 0.5 0 0 0 0 0 0.1 1 +
 ```
-This command first defines a polygon with 6 vertices: `(1, 0, 0)`, `(1, 1, 0)`, `(-1, 1, 0)`, `(-1, 0.5, 0)`, `(0, 0.5, 0)`, and `(0, 0, 0)` on the plane `z = 0`. It then defines an extrusion direction `(0, 0.1, 1)`. The final `+` means that the newly created extrusion will be merged into the current polyhedron.
+This command first defines a polygon with 6 vertices: `(1, 0, 0)`, `(1, 1, 0)`, `(-1, 1, 0)`, `(-1, 0.5, 0)`, `(0, 0.5, 0)`, and `(0, 0, 0)` on the plane `z = 0`. It then defines an extrusion direction `(0, 0.1, 1)`. The final `+` means that the newly created extrusion will be merged into the polyhedron in the canvas-so-far.
 
-The `extrude_ref` command is similar but replaces all the numerical numbers with references to elements in the target polyhedron. For example:
+The `extrude_ref` command is similar but replaces all the numerical numbers with references to elements of the polyhedron in the canvas-so-far. For example:
 ```
 >>> extrude_ref f2 0 v0 v6 +
 ```
 Here `f2` is the facet you pick, `0` is the vertex cycle index to use in that facet, and `v0` and `v6` define an extrusion direction (from vertex `v0` to vertex `v6`). Putting it together, this command extrudes the first vertex cycle in facet `f2` along the direction `v6 - v0` and merges the result into the current polyhedron.
+
+Just as the `ls` command above, we also provide the `--target` flag for `extrude_ref`. This flag allows you to use the elements from the target polyhedron instead of the polyhedron in the canvas-so-far.
 
 ### Converting between `.nef3` and `.off`
 In this project, `.off` files are used only to visualize a polyhedron (in the form of a triangle mesh). Modeling, including extrusion and boolean operations for now, should work with `.nef3` files. We present a `convert` command to convert between these two file formats. For example:
@@ -133,8 +135,8 @@ cd build
 >>> ls v
 >>> ls e
 >>> ls f
->>> extrude_ref f2 0 v0 v6 +
->>> extrude_ref f16 0 v14 v11 -
+>>> extrude_ref f2 0 v0 v6 + --target
+>>> extrude_ref f16 0 v14 v11 - --target
 >>> save sofa_reconstructed.nef3
 >>> save sofa_reconstructed.off
 >>> exit
@@ -150,7 +152,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> from scene import *
 >>> s = Scene()
 >>> s.LoadTarget("example/sofa.nef3")
->>> s.ListAllFaces()
+>>> s.ListTargetFaces()
 Face number 26
 f0	1
 v9	v17	v13	v12	v11	v18	v10	v6	v7	v8	

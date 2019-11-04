@@ -176,7 +176,22 @@ void Scene::LoadTarget(const std::string& file_name) {
     }
 }
 
-void Scene::ListAllVertices() {
+void Scene::ListSceneVertices() {
+    // TODO.
+    PrintWarning("ListSceneVertices not implemented.");
+}
+
+void Scene::ListSceneEdges() {
+    // TODO.
+    PrintWarning("ListSceneEdges not implemented.");
+}
+
+void Scene::ListSceneFaces() {
+    // TODO.
+    PrintWarning("ListSceneFaces not implemented.");
+}
+
+void Scene::ListTargetVertices() {
     std::cout << "Vertex number " << target_vertices_.size() << std::endl;
     int idx = 0;
     for (const auto& v : target_vertices_) {
@@ -186,7 +201,7 @@ void Scene::ListAllVertices() {
     }
 }
 
-void Scene::ListAllEdges() {
+void Scene::ListTargetEdges() {
     std::cout << "Edge number " << target_half_edges_.size() << std::endl;
     int idx = 0;
     for (const auto& e : target_half_edges_) {
@@ -196,7 +211,7 @@ void Scene::ListAllEdges() {
     }
 }
 
-void Scene::ListAllFaces() {
+void Scene::ListTargetFaces() {
     std::cout << "Face number " << target_half_facets_.size() << std::endl;
     int idx = 0;
     for (const auto& f : target_half_facets_) {
@@ -278,7 +293,7 @@ void Scene::Extrude(const std::vector<Vector3r>& polygon, const Vector3r& dir, c
     }
 }
 
-void Scene::ExtrudeFromRef(const int f_idx, const int loop_idx,
+void Scene::ExtrudeFromTargetRef(const int f_idx, const int loop_idx,
     const int v_source, const int v_target, const char op) {
     std::vector<Vector3r> polygon;
     for (const int vid : target_half_facets_[f_idx][loop_idx]) {
@@ -286,6 +301,11 @@ void Scene::ExtrudeFromRef(const int f_idx, const int loop_idx,
     }
     const Vector3r dir = target_vertices_[v_target] - target_vertices_[v_source];
     Extrude(polygon, dir, op);
+}
+
+void Scene::ExtrudeFromSceneRef(const int f_idx, const int loop_idx,
+    const int v_source, const int v_target, const char op) {
+    PrintWarning("ExtrudeFromSceneRef not implemented.");
 }
 
 void Scene::SaveScene(const std::string& file_name) {

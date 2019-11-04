@@ -36,14 +36,17 @@ int main() {
             const std::string file_name = words[1];
             scene.LoadTarget(file_name);
         } else if (command_type == "ls") {
-            CheckError(word_num == 2, "This command needs 1 input.");
-            CheckError(words[1].size() >= 1u, "Names need to have at least 1 character.");
+            CheckError(word_num == 2 || (word_num == 3 && words[2] == "--target"), "This command needs either 1 or 2 input.");
+            CheckError(words[1].size() == 1u, "Names need to have exactly 1 character.");
+            const bool show_target = word_num == 3 && words[2] == "--target";
             if (words[1] == "v") {
                 // List all vertex names and positions.
-                scene.ListAllVertices();
+                if (show_target) scene.ListTargetVertices();
+                else scene.ListSceneVertices();
             } else if (words[1] == "e") {
                 // List all edges and two endpoints.
-                scene.ListAllEdges();
+                if (show_target) scene.ListTargetEdges();
+                else scene.ListSceneEdges();
             } else if (words[1] == "f") {
                 // List all faces and edges, organized in a loop (or loops). Sample output:
                 // f1 2
@@ -51,7 +54,8 @@ int main() {
                 // e1 e3 e6 e5
                 // This face f1 has two loops. The first loop has three edges (e0, e2, and e3) and
                 // the second loop has four edges (e1, e3, e6, e5).
-                scene.ListAllFaces();
+                if (show_target) scene.ListTargetFaces();
+                else scene.ListSceneFaces();
             } else {
                 CheckError(false, "ls does not recognize this input argument.");
             }
@@ -74,7 +78,9 @@ int main() {
             CheckError(op == '+' || op == '-', "The boolean operator has to be either + or -.");
             scene.Extrude(polygon, dir, op);
         } else if (command_type == "extrude_ref") {
-            CheckError(word_num == 6, "The 'extrude_ref' command requires 5 inputs.");
+            CheckError(word_num == 6 || (word_num == 7 && words[6] == "--target"),
+                "The 'extrude_ref' command requires either 5 or 6 inputs.");
+            const bool use_target = word_num == 7 && words[6] == "--target";
             const std::string f_name = words[1];
             CheckError(StartsWith(f_name, "f"), "Invalid facet name.");
             const int f_idx = std::stoi(f_name.substr(1));
@@ -90,7 +96,8 @@ int main() {
             CheckError(words[5].size() == 1u, "The last input has to be a char.");
             const char op = words[5][0];
             CheckError(op == '+' || op == '-', "The boolean operator has to be either + or -.");
-            scene.ExtrudeFromRef(f_idx, loop_idx, source_idx, target_idx, op);
+            if (use_target) scene.ExtrudeFromTargetRef(f_idx, loop_idx, source_idx, target_idx, op);
+            else scene.ExtrudeFromSceneRef(f_idx, loop_idx, source_idx, target_idx, op);
         } else if (command_type == "save") {
             CheckError(word_num == 2, "This command needs 1 input.");
             const std::string file_name = words[1];

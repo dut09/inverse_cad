@@ -20,11 +20,16 @@ public:
 
     void LoadScene(const std::string& file_name);
     void LoadTarget(const std::string& file_name);
-    void ListAllVertices();
-    void ListAllEdges();
-    void ListAllFaces();
+    void ListSceneVertices();
+    void ListSceneEdges();
+    void ListSceneFaces();
+    void ListTargetVertices();
+    void ListTargetEdges();
+    void ListTargetFaces();
     void Extrude(const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op);
-    void ExtrudeFromRef(const int f_idx, const int loop_idx,
+    void ExtrudeFromSceneRef(const int f_idx, const int loop_idx,
+        const int v_source, const int v_target, const char op);
+    void ExtrudeFromTargetRef(const int f_idx, const int loop_idx,
         const int v_source, const int v_target, const char op);
     void SaveScene(const std::string& file_name);
     void Convert(const std::string& in_file_name, const std::string& out_file_name) const;
