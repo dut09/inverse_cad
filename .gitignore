@@ -1,2 +1,8 @@
+__pycache__/
 build/
 .vscode/
+
+scene.py
+_scene.so
+cpp/core/scene.py
+cpp/core/scene_wrap.cxx

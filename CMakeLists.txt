@@ -35,7 +35,6 @@ add_library(inverse_cad_core SHARED ${CORE_HEADER} ${CORE_CPP})
 file(GLOB_RECURSE CORE_BINDING "cpp/core/*.cpp" "cpp/core/*.cxx")
 add_library(scene SHARED ${CORE_HEADER} ${CORE_BINDING})
 
-
 # Main program.
 add_executable(inverse_cad_demo "cpp/demo/main.cpp")
 target_link_libraries(inverse_cad_demo inverse_cad_core)

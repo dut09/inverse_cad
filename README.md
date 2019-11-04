@@ -6,6 +6,11 @@
 ```
 git clone https://github.com/dut09/inverse_cad
 ```
+- Create a conda environment and activate it:
+```
+conda env create -f environment.yml
+conda activate inverse_cad
+```
 - Run `install.sh` from the root folder:
 ```
 ./install.sh
