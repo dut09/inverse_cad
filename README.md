@@ -12,9 +12,9 @@ git clone https://github.com/dut09/inverse_cad
 ```
 
 ## How to run
-`./inverse_cad_demo` is an interactive session: it maintains a polyhedron and you type in a few commands to modify it. The polyhedron is empty at the beginning. Below are the details explanations of each command:
+`./inverse_cad_demo` is an interactive session: it maintains a polyhedron and you type in a few commands to modify it. The polyhedron is empty at the beginning. Below are the detailed explanations of each command:
 ### Loading and saving
-`.nef3` is the proprietary file format designed by CGAL for handling 3D solids and boolean operations. We use it as the b-rep file in our project. An `.nef3` file includes the full information of a polyhedron. You can use the `load` command to load an `.nef3` file to the interactive session. For example:
+`.nef3` is the proprietary file format designed by CGAL for handling 3D solids and boolean operations. We use it as the b-rep file in our project. A `.nef3` file includes the full information of a polyhedron. You can use the `load` command to load an `.nef3` file to the interactive session. For example:
 ```
 >>> load sofa.nef3
 ```
@@ -30,7 +30,7 @@ or
 ```
 to save the current polyhedron into either a `.nef3` file which can be reloaded later or a `.off` file which can be used for visualization.
 
-We also present a `load_target` command to load an `.nef3` file describing the target polyhedron, i.e., the one that we want our polyhedron to eventually match after applying a finite number of commands. For example,
+We also present a `load_target` command to load a `.nef3` file describing the target polyhedron, i.e., the one that we want our polyhedron to eventually match after applying a finite number of commands. For example,
 ```
 >>> load_target sofa.nef3
 ```
@@ -39,7 +39,7 @@ will read the full description of the polyhedron in `sofa.nef3` and set it as ou
 ### Exploring topological information
 We provide `ls v`, `ls e`, and `ls f` to display the vertex, edge, and facet information about the target polyhedron respectively.
 
-The `ls v` command starts with a line of `Vertex number N` where `N` is the number of vertices in the target polyhedron. It is followed by `N` lines, one for each vertex, describing the name of each vertex and their 3D coordinates. Here is a sample output:
+The `ls v` command starts with a line of `Vertex number N` where `N` is the number of vertices in the target polyhedron. It is followed by `N` lines, one for each vertex, describing the name of each vertex and its 3D coordinates. Here is a sample output:
 ```
 >>> ls v
 Vertex number 22
@@ -49,7 +49,7 @@ v2      -1      1       0
 ...
 v21     0       0.2     0.5
 ```
-You can assume the name of a vertex always starts with a `v` followed by an index number increasing from `0` to `N-1`.
+You can assume the name of a vertex always starts with a `v` followed by an index number increasing from `0` to `N - 1`.
 
 The `ls e` command starts with a line of `Edge number N` where `N` is the number of *half edges*. For each edge connecting vertices `vi` and `vj`, two half edges are created, one pointing from `vi` to `vj` and the other from `vj` to `vi`. Each half edge is described by a line starting with its name, the source vertex, the target vertex, and its twin half edge connecting the same vertices in the opposite direction. Here is a sample output:
 ```
@@ -91,7 +91,7 @@ The `extrude_ref` command is similar but replaces all the numerical numbers with
 ```
 >>> extrude_ref f2 0 v0 v6 +
 ```
-Here `f2` is the facet you pick, `0` is the vertex cycle index to use in that facet, and `v0` and `v6` define an extrusion direction (from vertex `v0` to vertex `v6`). Putting it together, this command extrudes the first vertex cycle in facet `f2` along the direction `v6 - v0` and merge the result into the current polyhedron.
+Here `f2` is the facet you pick, `0` is the vertex cycle index to use in that facet, and `v0` and `v6` define an extrusion direction (from vertex `v0` to vertex `v6`). Putting it together, this command extrudes the first vertex cycle in facet `f2` along the direction `v6 - v0` and merges the result into the current polyhedron.
 
 ### Converting between `.nef3` and `.off`
 In this project, `.off` files are used only to visualize a polyhedron (in the form of a triangle mesh). Modeling, including extrusion and boolean operations for now, should work with `.nef3` files. We present a `convert` command to convert between these two file formats. For example:
@@ -132,5 +132,6 @@ cd build
 >>> extrude_ref f16 0 v14 v11 -
 >>> save sofa_reconstructed.nef3
 >>> save sofa_reconstructed.off
+>>> exit
 ```
 You can then compare `sofa.off` and `sofa_reconstructed.off` in Meshlab. They should be identical.
