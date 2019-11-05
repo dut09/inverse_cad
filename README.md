@@ -132,16 +132,19 @@ Here `sofa.nef3` is the b-rep file and `sofa.off` has the mesh information. You 
 cd build
 ./inverse_cad_demo
 >>> load_target sofa.nef3
+>>> ls v --target
+>>> ls e --target
+>>> ls f --target
+>>> extrude_ref f2 0 v0 v6 + --target
 >>> ls v
 >>> ls e
 >>> ls f
->>> extrude_ref f2 0 v0 v6 + --target
 >>> extrude_ref f16 0 v14 v11 - --target
 >>> save sofa_reconstructed.nef3
 >>> save sofa_reconstructed.off
 >>> exit
 ```
-You can then compare `sofa.off` and `sofa_reconstructed.off` in Meshlab. They should be identical.
+You can then compare `sofa.off` and `sofa_reconstructed.off` in Meshlab. They should be volumetrically identical.
 
 ## Python bindings
 ```
