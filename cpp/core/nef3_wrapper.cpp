@@ -273,7 +273,6 @@ private:
     int f_idx_, loop_idx_, v_source_, v_target_;
 };
 
-
 const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromRef(const int f_idx, const int loop_idx,
     const int v_source, const int v_target) const {
     Polyhedron poly;
@@ -292,7 +291,7 @@ void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
     const int vertex_num = static_cast<int>(vertices_.size());
     std::vector<int> old_to_new(vertex_num, -1), new_to_old(vertex_num, -1);
     // old_to_new_vertex_mapping must be a permutation.
-    const int target_vertex_num = static_cast<int>(other.GetVertexNum());
+    const int target_vertex_num = other.GetVertexNumber();
     for (int i = 0; i < vertex_num; ++i) {
         for (int j = 0; j < target_vertex_num; ++j) {
             if (vertices_[i] == other.vertices()[j]) {
@@ -322,10 +321,44 @@ void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
     new_vertices.swap(vertices_);
 
     // Update half edges.
-    for (auto& h : half_edges_) {
-        h.first = old_to_new[h.first];
-        h.second = old_to_new[h.second];
+    const int edge_num = static_cast<int>(half_edges_.size());
+    std::vector<int> old_to_new_edges(edge_num, -1), new_to_old_edges(edge_num, -1);
+    const int target_edge_num = other.GetHalfEdgeNumber();
+    for (int i = 0; i < edge_num; ++i) {
+        for (int j = 0; j < target_edge_num; ++j) {
+            const int first_i = old_to_new[half_edges_[i].first];
+            const int second_i = old_to_new[half_edges_[i].second];
+            const int first_other = other.half_edges()[j].first;
+            const int second_other = other.half_edges()[j].second;
+            if (vertices_match_target_[first_i] && vertices_match_target_[second_i] &&
+                first_i == first_other && second_i == second_other) {
+                    old_to_new_edges[i] = j;
+                    new_to_old_edges[j] = i;
+                    half_edges_match_target_[j] = true;
+                    break;
+                }
+        }
     }
+    unclaimed.clear();
+    for (int i = 0; i < edge_num; ++i) {
+        if (new_to_old_edges[i] == -1) unclaimed.push_back(i);
+    }
+    cnt = 0;
+    for (int i = 0; i < edge_num; ++i) {
+        if (old_to_new_edges[i] != -1) continue;
+        old_to_new_edges[i] = unclaimed[cnt];
+        new_to_old_edges[unclaimed[cnt]] = i;
+        ++cnt;
+    }
+    std::vector<std::pair<int, int>> new_half_edges(edge_num);
+    std::vector<int> new_half_edge_twins(edge_num, -1);
+    for (int i = 0; i < edge_num; ++i) {
+        new_half_edges[old_to_new_edges[i]] = std::make_pair(old_to_new[half_edges_[i].first], old_to_new[half_edges_[i].second]);
+        new_half_edge_twins[old_to_new_edges[i]] = old_to_new_edges[half_edge_twins_[i]];
+    }
+    new_half_edges.swap(half_edges_);
+    new_half_edge_twins.swap(half_edge_twins_);
+
     // Update half facets.
     for (auto& f : half_facets_)
         for (auto& vc : f)

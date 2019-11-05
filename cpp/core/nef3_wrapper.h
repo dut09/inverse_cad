@@ -34,7 +34,7 @@ public:
     const std::vector<std::vector<std::vector<int>>>& half_facets() const { return half_facets_; }
     const std::vector<int>& half_facet_twins() const { return half_facet_twins_; }
 
-    const int GetVertexNum() const { return static_cast<int>(vertices_.size()); }
+    const int GetVertexNumber() const { return static_cast<int>(vertices_.size()); }
     const int GetHalfEdgeNumber() const { return static_cast<int>(half_edges_.size()); }
     const int GetHalfFacetNumber() const { return static_cast<int>(half_facets_.size()); }
 
