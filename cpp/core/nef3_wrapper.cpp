@@ -22,11 +22,7 @@ void Nef3Wrapper::SyncDataStructure() {
     vertices_.reserve(vertex_num);
     Nef_polyhedron::Vertex_const_iterator v_iter;
     for (v_iter = poly_.vertices_begin(); v_iter != poly_.vertices_end(); ++v_iter) {
-        const real x = CGAL::to_double(v_iter->point().x());
-        const real y = CGAL::to_double(v_iter->point().y());
-        const real z = CGAL::to_double(v_iter->point().z());
-        Vector3r p(x, y, z);
-        vertices_.push_back(p);
+        vertices_.push_back(v_iter->point());
     }
 
     half_edges_.clear();
@@ -36,15 +32,8 @@ void Nef3Wrapper::SyncDataStructure() {
     half_edge_twins_.reserve(half_edge_num);
     Nef_polyhedron::Halfedge_const_iterator e_iter;
     for (e_iter = poly_.halfedges_begin(); e_iter != poly_.halfedges_end(); ++e_iter) {
-        const real sx = CGAL::to_double(e_iter->source()->point().x());
-        const real sy = CGAL::to_double(e_iter->source()->point().y());
-        const real sz = CGAL::to_double(e_iter->source()->point().z());
-        const int source_idx = GetVertexIndex(Vector3r(sx, sy, sz));
-
-        const real tx = CGAL::to_double(e_iter->target()->point().x());
-        const real ty = CGAL::to_double(e_iter->target()->point().y());
-        const real tz = CGAL::to_double(e_iter->target()->point().z());
-        const int target_idx = GetVertexIndex(Vector3r(tx, ty, tz));
+        const int source_idx = GetVertexIndex(e_iter->source()->point());
+        const int target_idx = GetVertexIndex(e_iter->target()->point());
         half_edges_.push_back(std::make_pair(source_idx, target_idx));
     }
     // Construct the twin edges.
@@ -187,6 +176,106 @@ void Nef3Wrapper::Save(const std::string& file_name) {
     }
 }
 
+template <class HDS>
+class BuildExtrusion : public CGAL::Modifier_base<HDS> {
+public:
+    BuildExtrusion(const Nef3Wrapper& parent) : parent_(parent) {}
+
+    void SetExtrusionInfo(const int f_idx, const int loop_idx, const int v_source, const int v_target) {
+        f_idx_ = f_idx;
+        loop_idx_ = loop_idx;
+        v_source_ = v_source;
+        v_target_ = v_target;
+    }
+
+    void operator()(HDS& hds) {
+        // Check the orientation of the polygon.
+        // TODO: maybe CGAL has done this already?
+        const int poly_dof = static_cast<int>(parent_.half_facets()[f_idx_][loop_idx_].size());
+        std::vector<Vector3r> offset_polygon;
+        for (const int vid : parent_.half_facets()[f_idx_][loop_idx_]) {
+            offset_polygon.push_back(parent_.ToEigenVector3r(parent_.vertices()[vid]));
+        }
+        for (auto& v : offset_polygon) v -= offset_polygon[0];
+        real vol = 0;
+        const Vector3r dir = parent_.ToEigenVector3r(parent_.vertices()[v_target_])
+            - parent_.ToEigenVector3r(parent_.vertices()[v_source_]);
+        for (int i = 0; i < poly_dof; ++i) {
+            const int next_i = (i + 1) % poly_dof;
+            const Vector3r v0 = offset_polygon[i], v1 = offset_polygon[next_i];
+            vol += v0.cross(v1).dot(dir);
+        }    
+        const bool reversed = vol < 0;
+
+        // Postcondition: hds is a valid polyhedral surface.
+        CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
+        builder.begin_surface(2 * poly_dof, 2 + poly_dof, 6 * poly_dof);
+        // Add points.
+        for (const int vid : parent_.half_facets()[f_idx_][loop_idx_]) {
+            builder.add_vertex(parent_.vertices()[vid]);
+        }
+        // Add points in the second layer.
+        const auto& ext_source = parent_.vertices()[v_source_];
+        const auto& ext_target = parent_.vertices()[v_target_];
+        Aff_transformation_3 shift(CGAL::TRANSLATION, Vector_3(ext_target - ext_source));
+        for (const int vid : parent_.half_facets()[f_idx_][loop_idx_]) {
+            builder.add_vertex(shift(parent_.vertices()[vid]));
+        }
+        // Add faces.
+        if (reversed) {
+            builder.begin_facet();
+            for (int i = 0; i < poly_dof; ++i) builder.add_vertex_to_facet(i);
+            builder.end_facet();
+
+            builder.begin_facet();
+            for (int i = poly_dof - 1; i >= 0; --i) builder.add_vertex_to_facet(i + poly_dof);
+            builder.end_facet();
+
+            for (int i = 0; i < poly_dof; ++i) {
+                const int j = (i + 1) % poly_dof;
+                builder.begin_facet();
+                builder.add_vertex_to_facet(j);
+                builder.add_vertex_to_facet(i);
+                builder.add_vertex_to_facet(i + poly_dof);
+                builder.add_vertex_to_facet(j + poly_dof);
+                builder.end_facet();
+            }
+        } else {
+            builder.begin_facet();
+            for (int i = 0; i < poly_dof; ++i) builder.add_vertex_to_facet(i + poly_dof);
+            builder.end_facet();
+
+            builder.begin_facet();
+            for (int i = poly_dof - 1; i >= 0; --i) builder.add_vertex_to_facet(i);
+            builder.end_facet();
+
+            for (int i = 0; i < poly_dof; ++i) {
+                const int j = (i + 1) % poly_dof;
+                builder.begin_facet();
+                builder.add_vertex_to_facet(i);
+                builder.add_vertex_to_facet(j);
+                builder.add_vertex_to_facet(j + poly_dof);
+                builder.add_vertex_to_facet(i + poly_dof);
+                builder.end_facet();
+            }
+        }
+        builder.end_surface();
+    }
+private:
+    const Nef3Wrapper& parent_;
+    int f_idx_, loop_idx_, v_source_, v_target_;
+};
+
+
+const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromRef(const int f_idx, const int loop_idx,
+    const int v_source, const int v_target) const {
+    Polyhedron poly;
+    BuildExtrusion<HalfedgeDS> extrusion(*this);
+    extrusion.SetExtrusionInfo(f_idx, loop_idx, v_source, v_target);
+    poly.delegate(extrusion);
+    return Nef_polyhedron(poly);
+}
+
 void Nef3Wrapper::Regularize(const Nef3Wrapper& other) {
     // This function does all the magic!
 }
@@ -205,7 +294,7 @@ void Nef3Wrapper::ListVertices() const {
     std::cout << "Vertex number " << vertices_.size() << std::endl;
     int idx = 0;
     for (const auto& v : vertices_) {
-        const real x = v.x(), y = v.y(), z = v.z();
+        const real x = CGAL::to_double(v.x()), y = CGAL::to_double(v.y()), z = CGAL::to_double(v.z());
         std::cout << "v" << idx << "\t" << x << "\t" << y << "\t" << z << std::endl;
         ++idx;
     }
@@ -235,7 +324,7 @@ void Nef3Wrapper::ListFacets() const {
     }
 }
 
-const int Nef3Wrapper::GetVertexIndex(const Vector3r& vertex) const {
+const int Nef3Wrapper::GetVertexIndex(const Exact_kernel::Point_3& vertex) const {
     int idx = 0;
     for (const auto& v : vertices_) {
         if (v.x() == vertex.x() && v.y() == vertex.y() && v.z() == vertex.z()) break;
@@ -251,4 +340,9 @@ const int Nef3Wrapper::GetHalfEdgeIndex(const int source, const int target) cons
         ++idx;
     }
     return idx;
+}
+
+const Vector3r Nef3Wrapper::ToEigenVector3r(const Exact_kernel::Point_3& point) {
+    Vector3r p(CGAL::to_double(point.x()), CGAL::to_double(point.y()), CGAL::to_double(point.z()));
+    return p;
 }

@@ -119,26 +119,35 @@ void Scene::Extrude(const std::vector<Vector3r>& polygon, const Vector3r& dir, c
 
 void Scene::ExtrudeFromTargetRef(const int f_idx, const int loop_idx,
     const int v_source, const int v_target, const char op) {
-    std::vector<Vector3r> polygon;
-    for (const int vid : target_.half_facets()[f_idx][loop_idx]) {
-        polygon.push_back(target_.vertices()[vid]);
+    Nef_polyhedron nef_poly = target_.BuildExtrusionFromRef(f_idx, loop_idx, v_source, v_target);
+    CheckError(nef_poly.is_simple(), "The input is not a 2-manifold.");
+
+    // Boolean operation.
+    CheckError(op == '+' || op == '-', "We only support union and difference for now.");
+    if (op == '+') {
+        canvas_ += nef_poly;
+    } else {
+        canvas_ -= nef_poly;
     }
-    const Vector3r dir = target_.vertices()[v_target] - target_.vertices()[v_source];
-    Extrude(polygon, dir, op);
+    canvas_.Regularize(target_);
 }
 
 void Scene::ExtrudeFromSceneRef(const int f_idx, const int loop_idx,
     const int v_source, const int v_target, const char op) {
-    std::vector<Vector3r> polygon;
-    for (const int vid : canvas_.half_facets()[f_idx][loop_idx]) {
-        polygon.push_back(canvas_.vertices()[vid]);
+    Nef_polyhedron nef_poly = canvas_.BuildExtrusionFromRef(f_idx, loop_idx, v_source, v_target);
+    CheckError(nef_poly.is_simple(), "The input is not a 2-manifold.");
+
+    // Boolean operation.
+    CheckError(op == '+' || op == '-', "We only support union and difference for now.");
+    if (op == '+') {
+        canvas_ += nef_poly;
+    } else {
+        canvas_ -= nef_poly;
     }
-    const Vector3r dir = canvas_.vertices()[v_target] - canvas_.vertices()[v_source];
-    Extrude(polygon, dir, op);
+    canvas_.Regularize(target_);
 }
 
 void Scene::SaveScene(const std::string& file_name) {
-    // Check the type of the file name.
     canvas_.Save(file_name);
 }
 
