@@ -2,6 +2,7 @@
 #define CORE_NEF3_WRAPPER_H
 
 #include "core/config.h"
+#include "core/common.h"
 #include "CGAL/Exact_predicates_exact_constructions_kernel.h"
 #include "CGAL/Polyhedron_3.h"
 #include "CGAL/Polyhedron_incremental_builder_3.h"
@@ -21,7 +22,7 @@ public:
     void Load(const std::string& file_name);
 
     void Save(const std::string& file_name);
-    void Regularize(const Nef3Wrapper& other);
+    void Regularize(const Nef3Wrapper& other, const real eps = ToReal(1e-6));
 
     void operator+=(const Nef_polyhedron& other);
     void operator-=(const Nef_polyhedron& other);
@@ -59,6 +60,10 @@ private:
     std::vector<int> half_edge_twins_;
     std::vector<std::vector<std::vector<int>>> half_facets_;
     std::vector<int> half_facet_twins_;
+
+    std::vector<bool> vertices_match_target_;
+    std::vector<bool> half_edges_match_target_;
+    std::vector<bool> half_facets_match_target_;
 };
 
 #endif

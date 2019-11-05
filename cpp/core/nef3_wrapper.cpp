@@ -155,6 +155,13 @@ void Nef3Wrapper::SyncDataStructure() {
         }
         half_facets_.push_back(fc_idx);
     }
+
+    vertices_match_target_.clear();
+    vertices_match_target_.resize(vertices_.size(), false);
+    half_edges_match_target_.clear();
+    half_edges_match_target_.resize(half_edges_.size(), false);
+    half_facets_match_target_.clear();
+    half_facets_match_target_.resize(half_facets_.size(), false);
 }
 
 void Nef3Wrapper::Save(const std::string& file_name) {
@@ -276,8 +283,53 @@ const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromRef(const int f_idx, const i
     return Nef_polyhedron(poly);
 }
 
-void Nef3Wrapper::Regularize(const Nef3Wrapper& other) {
-    // This function does all the magic!
+void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
+    std::fill(vertices_match_target_.begin(), vertices_match_target_.end(), false);
+    std::fill(half_edges_match_target_.begin(), half_edges_match_target_.end(), false);
+    std::fill(half_facets_match_target_.begin(), half_facets_match_target_.end(), false);
+
+    // TODO: should we use eps?
+    const int vertex_num = static_cast<int>(vertices_.size());
+    std::vector<int> old_to_new(vertex_num, -1), new_to_old(vertex_num, -1);
+    // old_to_new_vertex_mapping must be a permutation.
+    const int target_vertex_num = static_cast<int>(other.GetVertexNum());
+    for (int i = 0; i < vertex_num; ++i) {
+        for (int j = 0; j < target_vertex_num; ++j) {
+            if (vertices_[i] == other.vertices()[j]) {
+                CheckError(old_to_new[i] == -1 && new_to_old[j] == -1, "Vertices are duplicated.");
+                old_to_new[i] = j;
+                new_to_old[j] = i;
+                vertices_match_target_[j] = true;
+                break;
+            }
+        }
+    }
+    std::vector<int> unclaimed;
+    for (int i = 0; i < vertex_num; ++i) {
+        if (new_to_old[i] == -1) unclaimed.push_back(i);
+    }
+    int cnt = 0;
+    for (int i = 0; i < vertex_num; ++i) {
+        if (old_to_new[i] != -1) continue;
+        old_to_new[i] = unclaimed[cnt];
+        new_to_old[unclaimed[cnt]] = i;
+        ++cnt;
+    }
+    std::vector<Exact_kernel::Point_3> new_vertices(vertex_num);
+    for (int i = 0; i < vertex_num; ++i) {
+        new_vertices[old_to_new[i]] = vertices_[i];
+    }
+    new_vertices.swap(vertices_);
+
+    // Update half edges.
+    for (auto& h : half_edges_) {
+        h.first = old_to_new[h.first];
+        h.second = old_to_new[h.second];
+    }
+    // Update half facets.
+    for (auto& f : half_facets_)
+        for (auto& vc : f)
+            for (int& v : vc) v = old_to_new[v];
 }
 
 void Nef3Wrapper::operator+=(const Nef_polyhedron& other) {
@@ -295,7 +347,10 @@ void Nef3Wrapper::ListVertices() const {
     int idx = 0;
     for (const auto& v : vertices_) {
         const real x = CGAL::to_double(v.x()), y = CGAL::to_double(v.y()), z = CGAL::to_double(v.z());
-        std::cout << "v" << idx << "\t" << x << "\t" << y << "\t" << z << std::endl;
+        if (vertices_match_target_[idx])
+            std::cout << GreenHead() << "v" << idx << "\t" << x << "\t" << y << "\t" << z << GreenTail() << std::endl;
+        else
+            std::cout << "v" << idx << "\t" << x << "\t" << y << "\t" << z << std::endl;
         ++idx;
     }
 }
@@ -304,8 +359,12 @@ void Nef3Wrapper::ListEdges() const {
     std::cout << "Edge number " << half_edges_.size() << std::endl;
     int idx = 0;
     for (const auto& e : half_edges_) {
-        std::cout << "e" << idx << "\tv" << e.first << "\tv" << e.second << "\ttwin\t"
-            << "e" << half_edge_twins_[idx] << std::endl;
+        if (half_edges_match_target_[idx])
+            std::cout << GreenHead() << "e" << idx << "\tv" << e.first << "\tv" << e.second << "\ttwin\t"
+                << "e" << half_edge_twins_[idx] << GreenTail() << std::endl;
+        else
+            std::cout << "e" << idx << "\tv" << e.first << "\tv" << e.second << "\ttwin\t"
+                << "e" << half_edge_twins_[idx] << std::endl;
         ++idx;
     }
 }
@@ -314,12 +373,21 @@ void Nef3Wrapper::ListFacets() const {
     std::cout << "Face number " << half_facets_.size() << std::endl;
     int idx = 0;
     for (const auto& f : half_facets_) {
-        std::cout << "f" << idx << "\t" << f.size() << std::endl;
-        for (const auto& fc : f) {
-            for (const int v : fc) std::cout << "v" << v << "\t";
-            std::cout << std::endl;
+        if (half_facets_match_target_[idx]) {
+            std::cout << GreenHead() << "f" << idx << "\t" << f.size() << GreenTail() << std::endl;
+            for (const auto& fc : f) {
+                for (const int v : fc) std::cout << GreenHead() << "v" << v << "\t";
+                std::cout << GreenTail() << std::endl;
+            }
+            std::cout << GreenHead() << "twin\t" << "f" << half_facet_twins_[idx] << GreenTail() << std::endl;
+        } else {
+            std::cout << "f" << idx << "\t" << f.size() << std::endl;
+            for (const auto& fc : f) {
+                for (const int v : fc) std::cout << "v" << v << "\t";
+                std::cout << std::endl;
+            }
+            std::cout << "twin\t" << "f" << half_facet_twins_[idx] << std::endl;
         }
-        std::cout << "twin\t" << "f" << half_facet_twins_[idx] << std::endl;
         ++idx;
     }
 }
