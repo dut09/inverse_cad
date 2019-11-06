@@ -221,47 +221,40 @@ void Nef3Wrapper::Save(const std::string& file_name) {
 template <class HDS>
 class BuildExtrusion : public CGAL::Modifier_base<HDS> {
 public:
-    BuildExtrusion(const Nef3Wrapper& parent) : parent_(parent) {}
-
-    void SetExtrusionInfo(const int f_idx, const int loop_idx, const int v_source, const int v_target) {
-        f_idx_ = f_idx;
-        loop_idx_ = loop_idx;
-        v_source_ = v_source;
-        v_target_ = v_target;
+    void SetExtrusionInfo(const std::vector<Exact_kernel::Point_3>& polygon,
+        const Aff_transformation_3& dir) {
+        polygon_ = polygon;
+        dir_ = dir;
     }
 
     void operator()(HDS& hds) {
         // Check the orientation of the polygon.
         // TODO: maybe CGAL has done this already?
-        const int poly_dof = static_cast<int>(parent_.half_facets()[f_idx_][loop_idx_].size());
+        const int poly_dof = static_cast<int>(polygon_.size());
         std::vector<Vector3r> offset_polygon;
-        for (const int vid : parent_.half_facets()[f_idx_][loop_idx_]) {
-            offset_polygon.push_back(parent_.ToEigenVector3r(parent_.vertices()[vid]));
+        for (const auto& p : polygon_) {
+            offset_polygon.push_back(Nef3Wrapper::ToEigenVector3r(p));
         }
         for (auto& v : offset_polygon) v -= offset_polygon[0];
         real vol = 0;
-        const Vector3r dir = parent_.ToEigenVector3r(parent_.vertices()[v_target_])
-            - parent_.ToEigenVector3r(parent_.vertices()[v_source_]);
+        const Vector3r d = Nef3Wrapper::ToEigenVector3r(dir_(polygon_[0]) - polygon_[0]);
         for (int i = 0; i < poly_dof; ++i) {
             const int next_i = (i + 1) % poly_dof;
             const Vector3r v0 = offset_polygon[i], v1 = offset_polygon[next_i];
-            vol += v0.cross(v1).dot(dir);
-        }    
+            vol += v0.cross(v1).dot(d);
+        }
         const bool reversed = vol < 0;
 
         // Postcondition: hds is a valid polyhedral surface.
         CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
         builder.begin_surface(2 * poly_dof, 2 + poly_dof, 6 * poly_dof);
         // Add points.
-        for (const int vid : parent_.half_facets()[f_idx_][loop_idx_]) {
-            builder.add_vertex(parent_.vertices()[vid]);
+        for (const auto& p : polygon_) {
+            builder.add_vertex(p);
         }
         // Add points in the second layer.
-        const auto& ext_source = parent_.vertices()[v_source_];
-        const auto& ext_target = parent_.vertices()[v_target_];
-        Aff_transformation_3 shift(CGAL::TRANSLATION, Vector_3(ext_target - ext_source));
-        for (const int vid : parent_.half_facets()[f_idx_][loop_idx_]) {
-            builder.add_vertex(shift(parent_.vertices()[vid]));
+        for (const auto& p : polygon_) {
+            builder.add_vertex(dir_(p));
         }
         // Add faces.
         if (reversed) {
@@ -303,18 +296,27 @@ public:
         }
         builder.end_surface();
     }
+
 private:
-    const Nef3Wrapper& parent_;
-    int f_idx_, loop_idx_, v_source_, v_target_;
+    std::vector<Exact_kernel::Point_3> polygon_;
+    Aff_transformation_3 dir_;
 };
+
+const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromData(const std::vector<Exact_kernel::Point_3>& polygon,
+    const Aff_transformation_3& dir) const {
+    Polyhedron poly;
+    BuildExtrusion<HalfedgeDS> extrusion;
+    extrusion.SetExtrusionInfo(polygon, dir);
+    poly.delegate(extrusion);
+    return Nef_polyhedron(poly);
+}
 
 const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromRef(const int f_idx, const int loop_idx,
     const int v_source, const int v_target) const {
-    Polyhedron poly;
-    BuildExtrusion<HalfedgeDS> extrusion(*this);
-    extrusion.SetExtrusionInfo(f_idx, loop_idx, v_source, v_target);
-    poly.delegate(extrusion);
-    return Nef_polyhedron(poly);
+    std::vector<Exact_kernel::Point_3> polygon;
+    for (const int v : half_facets_[f_idx][loop_idx]) polygon.push_back(vertices_[v]);
+    Aff_transformation_3 dir(CGAL::TRANSLATION, vertices_[v_target] - vertices_[v_source]);
+    return BuildExtrusionFromData(polygon, dir);
 }
 
 void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
@@ -524,5 +526,10 @@ const int Nef3Wrapper::GetHalfEdgeIndex(const int source, const int target) cons
 
 const Vector3r Nef3Wrapper::ToEigenVector3r(const Exact_kernel::Point_3& point) {
     Vector3r p(CGAL::to_double(point.x()), CGAL::to_double(point.y()), CGAL::to_double(point.z()));
+    return p;
+}
+
+const Vector3r Nef3Wrapper::ToEigenVector3r(const Exact_kernel::Vector_3& vector) {
+    Vector3r p(CGAL::to_double(vector.x()), CGAL::to_double(vector.y()), CGAL::to_double(vector.z()));
     return p;
 }

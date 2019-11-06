@@ -42,10 +42,13 @@ public:
     void ListEdges() const;
     void ListFacets() const;
 
+    const Nef_polyhedron BuildExtrusionFromData(const std::vector<Exact_kernel::Point_3>& polygon,
+        const Aff_transformation_3& dir) const;
     const Nef_polyhedron BuildExtrusionFromRef(const int f_idx, const int loop_idx,
         const int v_source, const int v_target) const;
 
     static const Vector3r ToEigenVector3r(const Exact_kernel::Point_3& point);
+    static const Vector3r ToEigenVector3r(const Exact_kernel::Vector_3& vector);
 
 private:
     const int GetVertexIndex(const Exact_kernel::Point_3& vertex) const;

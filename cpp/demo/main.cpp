@@ -62,21 +62,7 @@ int main() {
         } else if (command_type == "extrude") {
             CheckError(word_num >= 14 && (word_num - 2) % 3 == 0,
                 "The 'extrude' command requires at least 14 inputs.");
-            // extrude <x y z> <x y z> ... <x y z> <dx, dy dz> <+|->.
-            const int poly_dof = static_cast<int>((word_num - 5) / 3);
-            std::vector<Vector3r> polygon(poly_dof);
-            for (int i = 0; i < poly_dof; ++i) {
-                for (int j = 0; j < 3; ++j) {
-                    polygon[i](j) = StrToReal(words[1 + i * 3 + j]);
-                }
-            }
-            Vector3r dir(StrToReal(words[1 + 3 * poly_dof]),
-                StrToReal(words[1 + 3 * poly_dof + 1]),
-                StrToReal(words[1 + 3 * poly_dof + 2]));
-            CheckError(words[word_num - 1].size() == 1u, "The last input has to be a char.");
-            const char op = words[word_num - 1][0];
-            CheckError(op == '+' || op == '-', "The boolean operator has to be either + or -.");
-            scene.Extrude(polygon, dir, op);
+            scene.ExtrudeFromString(command);
         } else if (command_type == "extrude_ref") {
             CheckError(word_num == 6 || (word_num == 7 && words[6] == "--target"),
                 "The 'extrude_ref' command requires either 5 or 6 inputs.");

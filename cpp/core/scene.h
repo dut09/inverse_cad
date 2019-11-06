@@ -15,7 +15,7 @@ public:
     void ListTargetVertices() const;
     void ListTargetEdges() const;
     void ListTargetFaces() const;
-    void Extrude(const std::vector<Vector3r>& polygon, const Vector3r& dir, const char op);
+    void ExtrudeFromString(const std::string& str);
     void ExtrudeFromSceneRef(const int f_idx, const int loop_idx,
         const int v_source, const int v_target, const char op);
     void ExtrudeFromTargetRef(const int f_idx, const int loop_idx,
