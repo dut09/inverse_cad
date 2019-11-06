@@ -7,6 +7,9 @@ class Scene {
 public:
     Scene();
 
+    const Scene Clone() const {
+        return Scene(*this);
+    }
     void LoadScene(const std::string& file_name);
     void LoadTarget(const std::string& file_name);
     void ListSceneVertices() const;

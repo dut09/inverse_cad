@@ -6,3 +6,7 @@ scene.py
 _scene.so
 cpp/core/scene.py
 cpp/core/scene_wrap.cxx
+
+# Ignore data.
+*.off
+*.nef3
