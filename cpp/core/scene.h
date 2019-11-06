@@ -10,6 +10,8 @@ public:
     const Scene Clone() const {
         return Scene(*this);
     }
+    void SetTargetFromOtherScene(const Scene& other);
+
     void LoadScene(const std::string& file_name);
     void LoadTarget(const std::string& file_name);
     void ListSceneVertices() const;
@@ -27,9 +29,6 @@ public:
     void Convert(const std::string& in_file_name, const std::string& out_file_name) const;
 
 private:
-    bool canvas_loaded_;
-    bool target_loaded_;
-
     Nef3Wrapper target_;
     Nef3Wrapper canvas_;
 };

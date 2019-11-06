@@ -23,7 +23,7 @@ s.ExtrudeFromString("extrude -0.8 0.2 1 0.8 0.2 1 0.8 0.8 1 -0.8 0.8 1 0 0 -0.5 
 s.SaveScene("sofa.nef3")
 s.SaveScene("sofa.off")
 
-# Verify the clone.
+# Verify deep copy.
 print_info('Verifing if deep copy works...')
 print_info('Output 1')
 s.ListSceneVertices()
@@ -34,7 +34,12 @@ input()
 
 # Reconstruct the sofa scene.
 print_info('Reconstructing sofa...')
-s_copy.LoadTarget('sofa.nef3')
+
+# Use the following two lines to verify SetTargetFromOtherScene works.
+s.LoadTarget('sofa.nef3')
+s_copy.SetTargetFromOtherScene(s)
+# Alternativley, you can do s_copy.LoadTarget('sofa.nef3') instead.
+
 s_copy.ExtrudeFromTargetRef(2, 0, 0, 6, '+')
 s_copy.ListSceneFaces()
 print_info('You should see some of the lines in the output above become green. Press enter to continue...')

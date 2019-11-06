@@ -2,13 +2,14 @@
 #include "core/common.h"
 #include "core/file_helper.h"
 
-Scene::Scene() : canvas_loaded_(false), target_loaded_(false) {}
+Scene::Scene() {}
+
+void Scene::SetTargetFromOtherScene(const Scene& other) {
+    target_ = other.target_;
+    canvas_.Regularize(target_);
+}
 
 void Scene::LoadScene(const std::string& file_name) {
-    CheckError(target_loaded_, "Please load the target first.");
-    CheckError(!canvas_loaded_, "You are not supposed to load the canvas twice.");
-    canvas_loaded_ = true;
-
     const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
     CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
     canvas_.Load(file_name);
@@ -16,12 +17,10 @@ void Scene::LoadScene(const std::string& file_name) {
 }
 
 void Scene::LoadTarget(const std::string& file_name) {
-    CheckError(!target_loaded_, "You are not supposed to load the target twice.");
-    target_loaded_ = true;
-
     const std::vector<std::string> name_and_ext = SplitString(file_name, '.');
     CheckError(name_and_ext.size() == 2u && name_and_ext[1] == "nef3", "Invalid file name.");
     target_.Load(file_name);
+    canvas_.Regularize(target_);
 }
 
 void Scene::ListSceneVertices() const {
