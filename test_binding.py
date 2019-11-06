@@ -74,6 +74,18 @@ print(edges)
 print_info('Press enter to continue.')
 input()
 
+print_info('All half facets in the canvas:')
+facets = []
+for fid in range(s.GetSceneHalfFacetNumber()):
+    f = s.GetSceneHalfFacet(fid)
+    name = f.name
+    cycles = [fc for fc in f.cycles]
+    twin = f.twin
+    facets.append((name, cycles, twin))
+print(facets)
+print_info('Press enter to continue.')
+input()
+
 s_copy.SaveScene('sofa_reconstructed.nef3')
 s_copy.SaveScene('sofa_reconstructed.off')
 print_info('You can use meshlab to check sofa.off and sofa_reconstructed.off. They should be identical.')

@@ -64,6 +64,11 @@ public:
         half_edges_[eid].second,
         half_edge_twins_[eid]
     }; }
+    const HalfFacetInfo GetHalfFacetInfo(const int fid) const { return {
+        "f" + std::to_string(fid),
+        half_facets_[fid],
+        half_facet_twins_[fid]
+    }; }
 
 private:
     const int GetVertexIndex(const Exact_kernel::Point_3& vertex) const;

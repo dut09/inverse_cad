@@ -15,4 +15,10 @@ struct HalfEdgeInfo {
     int twin;
 };
 
+struct HalfFacetInfo {
+    std::string name;
+    std::vector<std::vector<int>> cycles;
+    int twin;
+};
+
 #endif

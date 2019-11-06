@@ -40,6 +40,11 @@ public:
     const HalfEdgeInfo GetSceneHalfEdge(const int eid) const { return canvas_.GetHalfEdgeInfo(eid); }
     const HalfEdgeInfo GetTargetHalfEdge(const int eid) const { return target_.GetHalfEdgeInfo(eid); }
 
+    const int GetSceneHalfFacetNumber() const { return canvas_.GetHalfFacetNumber(); }
+    const int GetTargetHalfFacetNumber() const { return target_.GetHalfFacetNumber(); }
+    const HalfFacetInfo GetSceneHalfFacet(const int eid) const { return canvas_.GetHalfFacetInfo(eid); }
+    const HalfFacetInfo GetTargetHalfFacet(const int eid) const { return target_.GetHalfFacetInfo(eid); }
+
 private:
     Nef3Wrapper target_;
     Nef3Wrapper canvas_;
