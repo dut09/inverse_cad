@@ -2,6 +2,41 @@
 #include "core/common.h"
 #include "core/file_helper.h"
 
+static const bool CanPermute(const std::vector<int>& cycle1, const std::vector<int>& cycle2) {
+    if (cycle1.size() != cycle2.size()) return false;
+    const int num = static_cast<int>(cycle1.size());
+    int start_idx = -1;
+    for (int i = 0; i < num; ++i)
+        if (cycle2[i] == cycle1[0]) {
+            start_idx = i;
+            break;
+        }
+    if (start_idx == -1) return false;
+    for (int i = 0; i < num; ++i) {
+        const int j = (start_idx + i) % num;
+        if (cycle1[i] != cycle2[j]) return false;
+    }
+    return true;
+}
+
+static const bool CanPermute(const std::vector<std::vector<int>>& cycles1, const std::vector<std::vector<int>>& cycles2) {
+    if (cycles1.size() != cycles2.size()) return false;
+    const int num_cycles = static_cast<int>(cycles1.size());
+    std::vector<bool> mapped(num_cycles, false);
+    for (int i = 0; i < num_cycles; ++i) {
+        bool same = false;
+        for (int j = 0; j < num_cycles; ++j) {
+            if (mapped[j]) continue;
+            if (CanPermute(cycles1[i], cycles2[j])) {
+                mapped[j] = same = true;
+                break;
+            }
+        }
+        if (!same) return false;
+    }
+    return true;
+}
+
 void Nef3Wrapper::Load(const std::string& file_name) {
     std::ifstream in_file(file_name);
     poly_ = Nef_polyhedron();
@@ -363,6 +398,50 @@ void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
     for (auto& f : half_facets_)
         for (auto& vc : f)
             for (int& v : vc) v = old_to_new[v];
+
+    const int facet_num = static_cast<int>(half_facets_.size());
+    std::vector<int> old_to_new_facets(facet_num, -1), new_to_old_facets(facet_num, -1);
+    const int target_facet_num = other.GetHalfFacetNumber();
+    for (int i = 0; i < facet_num; ++i) {
+        for (int j = 0; j < target_facet_num; ++j) {
+            // Check if half_facets_[i] == other.half_facets()[j].
+            bool all_covered = true;
+            // First, it should have the same number of cycles.
+            // Then, all vertices must match the target.
+            for (const auto& vc : half_facets_[i])
+                for (const int v : vc)
+                    if (!vertices_match_target_[v]) {
+                        all_covered = false;
+                        break;
+                    }
+            if (!all_covered) continue;
+            if (CanPermute(half_facets_[i], other.half_facets()[j])) {
+                old_to_new_facets[i] = j;
+                new_to_old_facets[j] = i;
+                half_facets_match_target_[j] = true;
+                break;
+            }
+        }
+    }
+    unclaimed.clear();
+    for (int i = 0; i < facet_num; ++i) {
+        if (new_to_old_facets[i] == -1) unclaimed.push_back(i);
+    }
+    cnt = 0;
+    for (int i = 0; i < facet_num; ++i) {
+        if (old_to_new_facets[i] != -1) continue;
+        old_to_new_facets[i] = unclaimed[cnt];
+        new_to_old_facets[unclaimed[cnt]] = i;
+        ++cnt;
+    }
+    std::vector<std::vector<std::vector<int>>> new_half_facets(facet_num);
+    std::vector<int> new_half_facet_twins(facet_num, -1);
+    for (int i = 0; i < facet_num; ++i) {
+        new_half_facets[old_to_new_facets[i]] = half_facets_[i];
+        new_half_facet_twins[old_to_new_facets[i]] = old_to_new_facets[half_facet_twins_[i]];
+    }
+    new_half_facets.swap(half_facets_);
+    new_half_facet_twins.swap(half_facet_twins_);
 }
 
 void Nef3Wrapper::operator+=(const Nef_polyhedron& other) {
