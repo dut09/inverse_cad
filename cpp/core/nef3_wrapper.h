@@ -2,13 +2,14 @@
 #define CORE_NEF3_WRAPPER_H
 
 #include "core/config.h"
-#include "core/common.h"
 #include "CGAL/Exact_predicates_exact_constructions_kernel.h"
 #include "CGAL/Polyhedron_3.h"
 #include "CGAL/Polyhedron_incremental_builder_3.h"
 #include "CGAL/Nef_polyhedron_3.h"
 #include "CGAL/boost/graph/convert_nef_polyhedron_to_polygon_mesh.h"
 #include "CGAL/IO/Nef_polyhedron_iostream_3.h"
+#include "core/common.h"
+#include "core/python_struct.h"
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_kernel;
 typedef CGAL::Polyhedron_3<Exact_kernel> Polyhedron;
@@ -49,6 +50,20 @@ public:
 
     static const Vector3r ToEigenVector3r(const Exact_kernel::Point_3& point);
     static const Vector3r ToEigenVector3r(const Exact_kernel::Vector_3& vector);
+
+    // For python binding.
+    const VertexInfo GetVertexInfo(const int vid) const { return {
+        "v" + std::to_string(vid),
+        CGAL::to_double(vertices_[vid].x()),
+        CGAL::to_double(vertices_[vid].y()),
+        CGAL::to_double(vertices_[vid].z())
+    }; }
+    const HalfEdgeInfo GetHalfEdgeInfo(const int eid) const { return {
+        "e" + std::to_string(eid),
+        half_edges_[eid].first,
+        half_edges_[eid].second,
+        half_edge_twins_[eid]
+    }; }
 
 private:
     const int GetVertexIndex(const Exact_kernel::Point_3& vertex) const;

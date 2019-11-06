@@ -2,6 +2,7 @@
 #define CORE_SCENE_H
 
 #include "core/nef3_wrapper.h"
+#include "core/python_struct.h"
 
 class Scene {
 public:
@@ -27,6 +28,17 @@ public:
         const int v_source, const int v_target, const char op);
     void SaveScene(const std::string& file_name);
     void Convert(const std::string& in_file_name, const std::string& out_file_name) const;
+
+    // For Python binding.
+    const int GetSceneVertexNumber() const { return canvas_.GetVertexNumber(); }
+    const int GetTargetVertexNumber() const { return target_.GetVertexNumber(); }
+    const VertexInfo GetSceneVertex(const int vid) const { return canvas_.GetVertexInfo(vid); }
+    const VertexInfo GetTargetVertex(const int vid) const { return target_.GetVertexInfo(vid); }
+
+    const int GetSceneHalfEdgeNumber() const { return canvas_.GetHalfEdgeNumber(); }
+    const int GetTargetHalfEdgeNumber() const { return target_.GetHalfEdgeNumber(); }
+    const HalfEdgeInfo GetSceneHalfEdge(const int eid) const { return canvas_.GetHalfEdgeInfo(eid); }
+    const HalfEdgeInfo GetTargetHalfEdge(const int eid) const { return target_.GetHalfEdgeInfo(eid); }
 
 private:
     Nef3Wrapper target_;

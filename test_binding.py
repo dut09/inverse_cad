@@ -50,8 +50,32 @@ s_copy.ListSceneFaces()
 print_info('You should see all output above become green. Press enter to continue...')
 input()
 
+print_info('Exploring vertices/edges/facets...')
+print_info('All vertices in the canvas:')
+vertices = []
+for vid in range(s.GetSceneVertexNumber()):
+    v = s.GetSceneVertex(vid)
+    name = v.name
+    x, y, z = v.x, v.y, v.z
+    vertices.append((name, x, y, z))
+print(vertices)
+print_info('Press enter to continue.')
+input()
+
+print_info('All half edges in the target:')
+edges = []
+for eid in range(s.GetTargetHalfEdgeNumber()):
+    e = s.GetTargetHalfEdge(eid)
+    name = e.name
+    source, target = e.source, e.target
+    twin = e.twin
+    edges.append((name, source, target, twin))
+print(edges)
+print_info('Press enter to continue.')
+input()
+
 s_copy.SaveScene('sofa_reconstructed.nef3')
 s_copy.SaveScene('sofa_reconstructed.off')
 print_info('You can use meshlab to check sofa.off and sofa_reconstructed.off. They should be identical.')
-
+input()
 ############## Sample code ends ################
