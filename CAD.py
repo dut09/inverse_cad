@@ -174,6 +174,9 @@ class Extrusion():
     def compile(self, target):
         from state import NextVertex, Extrude
         vs = list(self.vertices)
+        if not self.union:
+            print("compiling a subtraction!")
+            print(vs)
         # want to pick a random rotation of the vertices
         if random.random() > 0.5:
             vs.reverse()
@@ -239,7 +242,7 @@ class Program():
 
     @staticmethod
     def sample(s):
-        return Program([Extrusion((0, 0.1, 1), True,
+        return Program([Extrusion((0, 0., 1), True,
                                   [Vertex(1, 0, 0),
                                    Vertex(1, 1, 0),
                                    Vertex(-1, 1, 0),
@@ -248,7 +251,9 @@ class Program():
                                    Vertex(0, 0, 0)]),
                         Extrusion((0, 0, -0.5),False,
                         [
-                            Vertex(-0.8, 0.2, 1),
+                            Vertex(-0.8, 0.5, 1),
+                            Vertex(0.0, 0.5, 1),
+                            Vertex(0.0, 0.2, 1),
                             Vertex(0.8, 0.2, 1),
                             Vertex(0.8, 0.8, 1),
                             Vertex(-0.8, 0.8, 1)

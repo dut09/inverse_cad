@@ -112,6 +112,7 @@ if __name__ == "__main__":
         actions = p.compile(t)
         if actions is not None:
             break
+    print("here are the actions")
     for a in actions:
         print(a)
         
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         L.backward()
         O.step()
         print(L)
-        if L < 0.01:
+        if L < 0.1:
             break
 
     states = [states[0]]

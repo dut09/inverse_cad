@@ -41,6 +41,7 @@ class State():
         feature_ = self.findClose(feature)
         if feature_ is None:
             print("couldn't add tag to",feature,"because there is nothing close")
+            print("here are the available vertices")
             for v in self.vertices:
                 print(v)
             assert 0
@@ -143,7 +144,6 @@ class NextVertex(Action):
         return f"NextVertex({self.v})"
 
     def __call__(self, s):
-        s.showTags()
         old_latest = s.getTagged("EXTRUDE_LATEST")
         s = s.addTag(self.v, "EXTRUDE_LATEST")
         
@@ -169,6 +169,7 @@ class Extrude(Action):
         if len(el) != 1: raise Death()
 
         el = el[0]
+        print(f"Invoking extrusion. Cackling vector from\t{self.v}\t{el}")
         displacement = (self.v.p[0] - el.p[0],
                         self.v.p[1] - el.p[1],
                         self.v.p[2] - el.p[2])
@@ -176,6 +177,7 @@ class Extrude(Action):
         face = [v.p #(v.p.x,v.p.y,v.p.z)
                 for v in s.extrude_vertices]
         newCanvas = s.canvas.extrude(face, displacement, self.union)
+        print("successfully invoked extrusion")
 
         return State(newCanvas, s.target)
 
