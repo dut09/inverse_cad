@@ -14,6 +14,7 @@ class Vertex(Feature):
         if y is None:
             x,y,z = x.x,x.y,x.z
         self.p = (x,y,z)
+    def child(self,o): return False
     def close(self,o,e=0.001):
         d = sum((u - v)**2
                 for u,v in zip(self.p,o.p) )**0.5
@@ -37,6 +38,9 @@ class Edge(Feature):
             self.e = (u,v)
         else:
             self.e = (v,u)
+
+    def child(self,o):
+        return isinstance(o,Vertex) and o in self.e
     
     def __hash__(self): return hash(self.e)
     def __eq__(self,o):
@@ -50,7 +54,20 @@ class Edge(Feature):
 class Face(Feature):
     def __init__(self, cycles):
         assert len(cycles) == 1
+        assert all(isinstance(e,Edge)
+                   for c in cycles
+                   for e in c )
+        assert all( isinstance(c,frozenset) for c in cycles )
         self.cycles = tuple(cycles)
+    def child(self,o):
+        if isinstance(o,Edge): return any( o == e
+                                           for c in self.cycles
+                                           for e in c )
+        if isinstance(o,Vertex):
+            return any( e.child(o)
+                        for c in self.cycles
+                        for e in c )
+        return False
     def __str__(self):
         return f"Face{self.cycles}"
     def __hash__(self):

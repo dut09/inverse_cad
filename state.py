@@ -43,7 +43,6 @@ class State():
             print("couldn't add tag to",feature,"because there is nothing close")
             assert 0
         feature = feature_
-        print("adding tag",tag,"2",feature)
         tags = {k: (v if k != feature else v|{tag})
             for k,v in self.tags.items() }
         return State(self.canvas,
@@ -109,6 +108,7 @@ class State():
         if canvas: self.canvas_features.add(e)
         if e not in self.edges:
             self.edges.append(e)
+        return e
 
     def registerFace(self,f, spec, canvas):
         f = Face([ frozenset(self.registerEdge(e, spec, canvas) for e in cycle)
@@ -135,25 +135,21 @@ class NextVertex(Action):
     def __init__(self, v):
         self.v = v
 
+    def code(self): return (0,self.v)
+
     def __str__(self):
         return f"NextVertex({self.v})"
 
     def __call__(self, s):
-        print(f"calling next vertex on {self.v} w/")
         s.showTags()
         old_latest = s.getTagged("EXTRUDE_LATEST")
-        print("the old latest is",old_latest)
         s = s.addTag(self.v, "EXTRUDE_LATEST")
         
         for latest in old_latest:
-            print("Removing / adding tag to",latest)
             s = s.addTag(latest,"EXTRUDE_FACE")
             s = s.removeTag(latest,"EXTRUDE_LATEST")
         
         s.extrude_vertices = s.extrude_vertices + [self.v]
-        print("yields")
-        s.showTags()
-        print()
         return s
 
 class Extrude(Action):
@@ -163,6 +159,8 @@ class Extrude(Action):
 
     def __str__(self):
         return f"Extrude({self.v}, union={self.union})"
+
+    def code(self): return (1 + int(self.union), self.v)
 
     def __call__(self, s):
         el = s.getTagged("EXTRUDE_LATEST")
