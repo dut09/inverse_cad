@@ -41,6 +41,8 @@ class State():
         feature_ = self.findClose(feature)
         if feature_ is None:
             print("couldn't add tag to",feature,"because there is nothing close")
+            for v in self.vertices:
+                print(v)
             assert 0
         feature = feature_
         tags = {k: (v if k != feature else v|{tag})

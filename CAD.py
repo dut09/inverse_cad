@@ -15,7 +15,7 @@ class Vertex(Feature):
             x,y,z = x.x,x.y,x.z
         self.p = (x,y,z)
     def child(self,o): return False
-    def close(self,o,e=0.001):
+    def close(self,o,e=0.01):
         d = sum((u - v)**2
                 for u,v in zip(self.p,o.p) )**0.5
         return d < e
@@ -90,7 +90,6 @@ class CAD():
             command.append('+')
         else:
             command.append('-')
-        print(" ".join(command))
         s.ExtrudeFromString(" ".join(["extrude"] + command))
         return CAD(s)
 
@@ -103,33 +102,6 @@ class CAD():
         if candidates: return candidates[0]
         return None
 
-
-    @staticmethod
-    def sample():
-        angle = 0
-        N = random.choice(range(3,8))
-        r = random.random() + 1
-        face = [(r,r,0)]
-        for _ in range(N - 1):            
-            d_angle = 2*math.pi/N#6.28/N
-
-            x,y,_ = face[-1]
-            x = x + r*math.cos(angle + d_angle)
-            y = y + r*math.sin(angle + d_angle)
-            
-            angle += d_angle
-
-            face.append((x,y,0))
-
-        c = CAD()
-        c = c.extrude(face,(0,0,1))
-
-        # f = 0.5 + 0.5*random.random()
-        # face = [(x*f,y*f,1)
-        #         for x,y,_ in face ]
-        # d = 0.2 + 0.7*random.random()
-        # c = c.extrude(face,(0,0,-d),False)
-        return c
 
     def getVertices(self):
         N = self.child.GetSceneVertexNumber()
@@ -223,22 +195,25 @@ class Extrusion():
                          self.union)
 
     @staticmethod
-    def sample(c):
-        angle = 0
-        N = random.choice(range(3,8))
-        r = random.random() + 1
-        face = [Vertex(r,r,0)]
-        for _ in range(N - 1):            
-            d_angle = 2*math.pi/N#6.28/N
+    def sample(c, union=True):
+        if union:
+            angle = 0
+            N = random.choice(range(3,8))
+            r = random.random() + 1
+            face = [Vertex(r,r,0)]
+            for _ in range(N - 1):            
+                d_angle = 2*math.pi/N#6.28/N
 
-            x,y,_ = face[-1].p
-            x = x + r*math.cos(angle + d_angle)
-            y = y + r*math.sin(angle + d_angle)
-            
-            angle += d_angle
+                x,y,_ = face[-1].p
+                x = x + r*math.cos(angle + d_angle)
+                y = y + r*math.sin(angle + d_angle)
 
-            face.append(Vertex(x,y,0))
-        return Extrusion((0,0,1),True,face)
+                angle += d_angle
+
+                face.append(Vertex(x,y,0))
+            return Extrusion((0,0,1),True,face)
+        else:
+            assert False
 
 class Program():
     def __init__(self, commands):
@@ -251,7 +226,9 @@ class Program():
     def compile(self, target):
         actions = []
         for k in self.commands:
-            actions.extend(k.compile(target))
+            compilation = k.compile(target)
+            if compilation is None: return None
+            actions.extend(compilation)
         return actions
 
     def __str__(self):
@@ -262,20 +239,40 @@ class Program():
 
     @staticmethod
     def sample(s):
-        return Program([Extrusion.sample(s)])
-            
-        
-        
-if __name__ == "__main__":
-    for i in range(1):
-        
-        c = CAD.sample()
-        v = c.getVertices()
-        e = c.getEdges()
-        f = c.getFaces()
-        print(len(f),"faces")
-        print(f)
-        #import pdb; pdb.set_trace()
-        
-        
-        
+        return Program([Extrusion((0, 0.1, 1), True,
+                                  [Vertex(1, 0, 0),
+                                   Vertex(1, 1, 0),
+                                   Vertex(-1, 1, 0),
+                                   Vertex(-1, 0.5, 0),
+                                   Vertex(0, 0.5, 0),
+                                   Vertex(0, 0, 0)]),
+                        Extrusion((0, 0, -0.5),False,
+                        [
+                            Vertex(-0.8, 0.2, 1),
+                            Vertex(0.8, 0.2, 1),
+                            Vertex(0.8, 0.8, 1),
+                            Vertex(-0.8, 0.8, 1)
+                        ])
+        ])
+                            
+        angle = 0
+        N = random.choice(range(3,8))
+        r = random.random() + 1
+        face = [Vertex(r,r,0)]
+        for _ in range(N - 1):            
+            d_angle = 2*math.pi/N#6.28/N
+
+            x,y,_ = face[-1].p
+            x = x + r*math.cos(angle + d_angle)
+            y = y + r*math.sin(angle + d_angle)
+
+            angle += d_angle
+
+            face.append(Vertex(x,y,0))
+        command1 = Extrusion((0,0,1),True,face)
+
+        subtraction = [Vertex(v.p[0] + 1.,v.p[1] + 1.,v.p[2] + 1.)
+                       for v in face[:3]]
+        command2 = Extrusion((0,0,-0.5),False,subtraction)
+
+        return Program([command1, command2])

@@ -104,10 +104,17 @@ if __name__ == "__main__":
     m = Agent()
     O = torch.optim.Adam(m.parameters(), lr=0.001)
     
-    p = Program.sample(None)
+    p = Program.sample(CAD())
     t = p.execute(CAD())
+    t.export("/tmp/targeting.off")
     states = [State(CAD(),t)]
-    actions = p.compile(t)
+    while True:
+        actions = p.compile(t)
+        if actions is not None:
+            break
+    for a in actions:
+        print(a)
+        
     for a in actions:
         states.append(a(states[-1]))
     while True:
