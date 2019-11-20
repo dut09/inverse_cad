@@ -22,7 +22,7 @@ class Agent(Module):
         layer = TransformerEncoderLayer(self.d_model,
                                         heads,
                                         d_ff,
-                                        dropout=0.1,
+                                        dropout=0.0,
                                         activation="relu")
         self.encoder = TransformerEncoder(layer, layers, LayerNorm(self.d_model))
 
@@ -102,7 +102,7 @@ class Agent(Module):
 
 if __name__ == "__main__":
     m = Agent()
-    O = torch.optim.Adam(m.parameters(), lr=0.001)
+    O = torch.optim.Adam(m.parameters(), lr=0.0001)
     
     p = Program.sample(CAD())
     t = p.execute(CAD())

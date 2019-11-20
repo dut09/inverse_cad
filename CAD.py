@@ -51,6 +51,12 @@ class Edge(Feature):
         return f"Edge{self.e}"
     def __repr__(self): return str(self)
 
+    def numpy(self):
+        dx = self.e[0].x - self.e[1].x
+        dy = self.e[0].y - self.e[1].y
+        dz = self.e[0].z - self.e[1].z
+        return np.array([dx,dy,dz])
+
 class Face(Feature):
     def __init__(self, cycles):
         assert len(cycles) == 1
@@ -176,7 +182,10 @@ class Extrusion():
         vs = list(self.vertices)
         if not self.union:
             print("compiling a subtraction!")
+            print("here the vertices inside of the subtraction command")
             print(vs)
+            print("here are the vertices inside of the target")
+            print(target.getVertices())
         # want to pick a random rotation of the vertices
         if random.random() > 0.5:
             vs.reverse()
@@ -198,7 +207,29 @@ class Extrusion():
                          self.union)
 
     @staticmethod
-    def sample(c, union=True):
+    def sample(c, union=True, face=None):
+        if face is None:
+            assert union
+            a = Vertex(-5,-5,0)
+            b = Vertex(5,-5,0)
+            c = Vertex(5,5,0)
+            d = Vertex(-5,5,0)
+            face = Face(frozenset([Edge(a,b),
+                                   Edge(b,c),
+                                   Edge(c,d),
+                                   Edge(d,a)]))
+
+        edges = face.cycles[0]
+        normals = [cp
+                   for e1 in edges for e2 in edges
+                   for cp in [np.cross(e1.numpy(),e2.numpy())]
+                   if (cp*cp).sum()/((e1*e1).sum()*(e2*e2).sum()) > 0.1]
+        normal = random.choice(normals)
+        normal = normal/((normal*normal).sum()**0.5)
+
+        
+        
+        
         if union:
             angle = 0
             N = random.choice(range(3,8))
@@ -242,7 +273,7 @@ class Program():
 
     @staticmethod
     def sample(s):
-        return Program([Extrusion((0, 0., 1), True,
+        return Program([Extrusion((0, 0.1, 1), True,
                                   [Vertex(1, 0, 0),
                                    Vertex(1, 1, 0),
                                    Vertex(-1, 1, 0),
@@ -251,8 +282,8 @@ class Program():
                                    Vertex(0, 0, 0)]),
                         Extrusion((0, 0, -0.5),False,
                         [
-                            Vertex(-0.8, 0.5, 1),
-                            Vertex(0.0, 0.5, 1),
+                            Vertex(-0.8, 0.6, 1),
+                            Vertex(0.0, 0.6, 1),
                             Vertex(0.0, 0.2, 1),
                             Vertex(0.8, 0.2, 1),
                             Vertex(0.8, 0.8, 1),
