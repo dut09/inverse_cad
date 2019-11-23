@@ -15,6 +15,7 @@ typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_kernel;
 typedef CGAL::Polyhedron_3<Exact_kernel> Polyhedron;
 typedef CGAL::Nef_polyhedron_3<Exact_kernel> Nef_polyhedron;
 typedef Exact_kernel::Vector_3 Vector_3;
+typedef Exact_kernel::Point_3 Point_3;
 typedef Exact_kernel::Aff_transformation_3 Aff_transformation_3;
 typedef Polyhedron::HalfedgeDS HalfedgeDS;
 
@@ -29,7 +30,7 @@ public:
     void operator-=(const Nef_polyhedron& other);
 
     const Nef_polyhedron& poly() const { return poly_; }
-    const std::vector<Exact_kernel::Point_3>& vertices() const { return vertices_; }
+    const std::vector<Point_3>& vertices() const { return vertices_; }
     const std::vector<std::pair<int, int>>& half_edges() const { return half_edges_; }
     const std::vector<int>& half_edge_twins() const { return half_edge_twins_; }
     const std::vector<std::vector<std::vector<int>>>& half_facets() const { return half_facets_; }
@@ -43,13 +44,13 @@ public:
     void ListEdges() const;
     void ListFacets() const;
 
-    const Nef_polyhedron BuildExtrusionFromData(const std::vector<Exact_kernel::Point_3>& polygon,
+    const Nef_polyhedron BuildExtrusionFromData(const std::vector<Point_3>& polygon,
         const Aff_transformation_3& dir) const;
     const Nef_polyhedron BuildExtrusionFromRef(const int f_idx, const int loop_idx,
         const int v_source, const int v_target) const;
 
-    static const Vector3r ToEigenVector3r(const Exact_kernel::Point_3& point);
-    static const Vector3r ToEigenVector3r(const Exact_kernel::Vector_3& vector);
+    static const Vector3r ToEigenVector3r(const Point_3& point);
+    static const Vector3r ToEigenVector3r(const Vector_3& vector);
 
     // For python binding.
     const VertexInfo GetVertexInfo(const int vid) const { return {
@@ -71,14 +72,14 @@ public:
     }; }
 
 private:
-    const int GetVertexIndex(const Exact_kernel::Point_3& vertex) const;
+    const int GetVertexIndex(const Point_3& vertex) const;
     const int GetHalfEdgeIndex(const int source, const int target) const;
 
     void SyncDataStructure();
 
     Nef_polyhedron poly_;
 
-    std::vector<Exact_kernel::Point_3> vertices_;
+    std::vector<Point_3> vertices_;
     std::vector<std::pair<int, int>> half_edges_;
     std::vector<int> half_edge_twins_;
     std::vector<std::vector<std::vector<int>>> half_facets_;

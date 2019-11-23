@@ -100,6 +100,13 @@ Here `f2` is the facet you pick, `0` is the vertex cycle index to use in that fa
 
 Just as the `ls` command above, we also provide the `--target` flag for `extrude_ref`. This flag allows you to use the elements from the target polyhedron instead of the polyhedron in the canvas-so-far.
 
+### Generating random polygon
+We present a command `rand_poly` to generate a random polygon from a selected surface. This command takes as input a half facet name and an optional `--target` command. For example:
+```
+>>> rand_poly f2 --target
+```
+The command will first pick the half facet from either the target or the polyhedron in the canvas-so-far and check if the facet contains holes (by checking the number of vertex cycles). It will terminate if the facet contains a hole. The command will then create a random polygon on the facet and return a string `x1 y1 z1 x2 y2 z2 ...` describing the vertices of the generated polygon. The order of the vertices is guaranteed to be the same as the order of the vertex cycle in the half facet. The random polygon is guaranteed to be valid but does not need to be convex.
+
 ### Converting between `.nef3` and `.off`
 In this project, `.off` files are used only to visualize a polyhedron (in the form of a triangle mesh). Modeling, including extrusion and boolean operations for now, should work with `.nef3` files. We present a `convert` command to convert between these two file formats. For example:
 ```

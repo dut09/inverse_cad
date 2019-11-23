@@ -221,7 +221,7 @@ void Nef3Wrapper::Save(const std::string& file_name) {
 template <class HDS>
 class BuildExtrusion : public CGAL::Modifier_base<HDS> {
 public:
-    void SetExtrusionInfo(const std::vector<Exact_kernel::Point_3>& polygon,
+    void SetExtrusionInfo(const std::vector<Point_3>& polygon,
         const Aff_transformation_3& dir) {
         polygon_ = polygon;
         dir_ = dir;
@@ -298,11 +298,11 @@ public:
     }
 
 private:
-    std::vector<Exact_kernel::Point_3> polygon_;
+    std::vector<Point_3> polygon_;
     Aff_transformation_3 dir_;
 };
 
-const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromData(const std::vector<Exact_kernel::Point_3>& polygon,
+const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromData(const std::vector<Point_3>& polygon,
     const Aff_transformation_3& dir) const {
     Polyhedron poly;
     BuildExtrusion<HalfedgeDS> extrusion;
@@ -313,7 +313,7 @@ const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromData(const std::vector<Exact
 
 const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromRef(const int f_idx, const int loop_idx,
     const int v_source, const int v_target) const {
-    std::vector<Exact_kernel::Point_3> polygon;
+    std::vector<Point_3> polygon;
     for (const int v : half_facets_[f_idx][loop_idx]) polygon.push_back(vertices_[v]);
     Aff_transformation_3 dir(CGAL::TRANSLATION, vertices_[v_target] - vertices_[v_source]);
     return BuildExtrusionFromData(polygon, dir);
@@ -351,7 +351,7 @@ void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
         new_to_old[unclaimed[cnt]] = i;
         ++cnt;
     }
-    std::vector<Exact_kernel::Point_3> new_vertices(vertex_num);
+    std::vector<Point_3> new_vertices(vertex_num);
     for (int i = 0; i < vertex_num; ++i) {
         new_vertices[old_to_new[i]] = vertices_[i];
     }
@@ -506,7 +506,7 @@ void Nef3Wrapper::ListFacets() const {
     }
 }
 
-const int Nef3Wrapper::GetVertexIndex(const Exact_kernel::Point_3& vertex) const {
+const int Nef3Wrapper::GetVertexIndex(const Point_3& vertex) const {
     int idx = 0;
     for (const auto& v : vertices_) {
         if (v.x() == vertex.x() && v.y() == vertex.y() && v.z() == vertex.z()) break;
@@ -524,12 +524,12 @@ const int Nef3Wrapper::GetHalfEdgeIndex(const int source, const int target) cons
     return idx;
 }
 
-const Vector3r Nef3Wrapper::ToEigenVector3r(const Exact_kernel::Point_3& point) {
+const Vector3r Nef3Wrapper::ToEigenVector3r(const Point_3& point) {
     Vector3r p(CGAL::to_double(point.x()), CGAL::to_double(point.y()), CGAL::to_double(point.z()));
     return p;
 }
 
-const Vector3r Nef3Wrapper::ToEigenVector3r(const Exact_kernel::Vector_3& vector) {
+const Vector3r Nef3Wrapper::ToEigenVector3r(const Vector_3& vector) {
     Vector3r p(CGAL::to_double(vector.x()), CGAL::to_double(vector.y()), CGAL::to_double(vector.z()));
     return p;
 }
