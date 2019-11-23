@@ -175,6 +175,7 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
     // 3. Both points have been generated = edge_info[{v0, v1}] = { true, p }.
     std::map<std::pair<int, int>, std::pair<bool, Point_3>> edge_info;
     bool enter = false;
+    std::vector<bool> skipped(bfs_faces.size(), false);
     while (true) {
         // Regularize the key.
         const auto f = bfs_faces[current_face].face;
@@ -184,18 +185,11 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
         const int vmax = v0 + v1 - vmin;
         const Point_3 p0 = polyhedron.vertices()[v0];
         const Point_3 p1 = polyhedron.vertices()[v1];
-        auto key = std::make_pair(vmin, vmax);
+        const auto key = std::make_pair(vmin, vmax);
         if (edge_info.find(key) == edge_info.end()) {
-            // Generate a point.
-            const Point_3 q0 = CGAL::barycenter(p0, rand.get_double(0.55, 0.95), p1);
-            const Point_3 q1 = CGAL::barycenter(p0, rand.get_double(0.05, 0.45), p1);
-            // They must be colinear.
-            CheckError(CGAL::collinear(p0, p1, q0), "Expect colinearity.");
-            CheckError(CGAL::collinear(p0, p1, q1), "Expect colinearity.");
-            edge_info[key] = std::make_pair(false, q1);
-            oss << q0 << " ";
             CheckError(!enter, "Should be leaving this triangle.");
             const int next_face = bfs_faces[current_face].children[current_edge];
+            bool skip = false;
             if (next_face != -1) {
                 current_face = next_face;
                 // Determine the next edge.
@@ -207,8 +201,27 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
                     }
                 }
                 CheckError(current_edge != -1, "Missing edges.");
+                enter = false;
+            } else {
+                // Skip this edge with some probability.
+                skip = !skipped[current_face] && rand.get_double() < 0.5;
+                if (!skip) enter = true;
+                else {
+                    current_edge = cdt.ccw(current_edge);
+                    enter = false;
+                    skipped[current_face] = true;
+                }
             }
-            enter = next_face == -1;
+            if (!skip) {
+                // Generate a point.
+                const Point_3 q0 = CGAL::barycenter(p0, rand.get_double(0.55, 0.95), p1);
+                const Point_3 q1 = CGAL::barycenter(p0, rand.get_double(0.05, 0.45), p1);
+                // They must be colinear.
+                CheckError(CGAL::collinear(p0, p1, q0), "Expect colinearity.");
+                CheckError(CGAL::collinear(p0, p1, q1), "Expect colinearity.");
+                edge_info[key] = std::make_pair(false, q1);
+                oss << q0 << " ";
+            }
         } else if (!edge_info[key].first) {
             oss << edge_info[key].second << " ";
             edge_info[key].first = true;
