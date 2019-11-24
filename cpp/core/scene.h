@@ -26,7 +26,7 @@ public:
         const int v_source, const int v_target, const char op);
     void ExtrudeFromTargetRef(const int f_idx, const int loop_idx,
         const int v_source, const int v_target, const char op);
-    const std::string GenerateRandomPolygon(const int f_idx, const bool use_target) const;
+    const std::string GenerateRandomPolygon(const int f_idx, const real skip_prob, const real collapse_prob, const bool use_target) const;
     void SaveScene(const std::string& file_name);
     void Convert(const std::string& in_file_name, const std::string& out_file_name) const;
 

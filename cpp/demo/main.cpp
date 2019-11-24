@@ -85,12 +85,14 @@ int main() {
             if (use_target) scene.ExtrudeFromTargetRef(f_idx, loop_idx, source_idx, target_idx, op);
             else scene.ExtrudeFromSceneRef(f_idx, loop_idx, source_idx, target_idx, op);
         } else if (command_type == "rand_poly") {
-            CheckError(word_num == 2 || (word_num == 3 && words[2] == "--target"), "This command needs 1 or 2 inputs.");
+            CheckError(word_num == 4 || (word_num == 5 && words[4] == "--target"), "This command needs 3 or 4 inputs.");
             const std::string facet_name = words[1];
-            const bool use_target = word_num == 3 && words[2] == "--target";
+            const bool use_target = word_num == 5 && words[4] == "--target";
             CheckError(StartsWith(facet_name, "f"), "Invalid facet name.");
+            const real skip_prob = std::stod(words[2]);
+            const real collapse_prob = std::stod(words[3]);
             const int f_idx = std::stoi(facet_name.substr(1));
-            std::cout << scene.GenerateRandomPolygon(f_idx, use_target) << std::endl;
+            std::cout << scene.GenerateRandomPolygon(f_idx, skip_prob, collapse_prob, use_target) << std::endl;
         } else if (command_type == "save") {
             CheckError(word_num == 2, "This command needs 1 input.");
             const std::string file_name = words[1];

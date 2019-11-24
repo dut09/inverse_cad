@@ -88,7 +88,8 @@ void Scene::LoadTarget(const std::string& file_name) {
     canvas_.Regularize(target_);
 }
 
-const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_target) const {
+const std::string Scene::GenerateRandomPolygon(const int f_idx, const real skip_prob,
+    const real collapse_prob, const bool use_target) const {
     const Nef3Wrapper& polyhedron = use_target ? target_ : canvas_;
     CheckError(0 <= f_idx && f_idx < static_cast<int>(polyhedron.half_facets().size()), "f_idx out of range.");
     CheckError(polyhedron.half_facets()[f_idx].size() == 1u, "Polygon with holes is not supported.");
@@ -98,9 +99,16 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
     // Build the local frame.
     const Point_3 v0 = polyhedron.vertices()[vertex_cycle[0]];
     const Point_3 v1 = polyhedron.vertices()[vertex_cycle[1]];
-    const Point_3 v2 = polyhedron.vertices()[vertex_cycle[2]];
     Vector_3 x = v1 - v0;
-    const Vector_3 z = CGAL::cross_product(x, v2 - v1);
+    Vector_3 z(0, 0, 0);
+    for (const int vid : vertex_cycle) {
+        const Point_3& v2 = polyhedron.vertices()[vid];
+        if (!CGAL::collinear(v0, v1, v2)) {
+            z = CGAL::cross_product(x, v2 - v1);
+            break;
+        }
+    }
+    CheckError(z.squared_length() < 0.5, "Polyhedron is degenerated.");
     Vector_3 y = CGAL::cross_product(x, z);
     x /= std::sqrt(CGAL::to_double(x.squared_length()));
     y /= std::sqrt(CGAL::to_double(y.squared_length()));
@@ -166,16 +174,19 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
     }
 
     // Generate the polygon.
-    std::ostringstream oss;
     int current_face = 0;
     int current_edge = 0;
     // Each edge has three possible cases while being visited.
     // 1. It has not been visited yet = {v0, v1} has not been added to edge_info;
-    // 2. One point is generated = edge_info[{v0, v1}] = { false, the other point };
-    // 3. Both points have been generated = edge_info[{v0, v1}] = { true, p }.
-    std::map<std::pair<int, int>, std::pair<bool, Point_3>> edge_info;
+    // 2. One point is generated = edge_info[{v0, v1}] = { false, the other point, its parent vertex };
+    // 3. Both points have been generated = edge_info[{v0, v1}] = { true, p, its parent vertex }.
+    std::map<std::pair<int, int>, std::tuple<bool, Point_3, int>> edge_info;
     bool enter = false;
+    // The two data structures below are used to reduce the number of edges in the final output.
+    // With some probability, we skip sampling two points on the boundary edge.
     std::vector<bool> skipped(bfs_faces.size(), false);
+    // With some probability, we chose to collapse sapmles to its parent vertex.
+    std::vector<std::pair<Point_3, int>> output_info;
     while (true) {
         // Regularize the key.
         const auto f = bfs_faces[current_face].face;
@@ -204,7 +215,7 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
                 enter = false;
             } else {
                 // Skip this edge with some probability.
-                skip = !skipped[current_face] && rand.get_double() < 0.5;
+                skip = !skipped[current_face] && rand.get_double() < skip_prob;
                 if (!skip) enter = true;
                 else {
                     current_edge = cdt.ccw(current_edge);
@@ -219,12 +230,14 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
                 // They must be colinear.
                 CheckError(CGAL::collinear(p0, p1, q0), "Expect colinearity.");
                 CheckError(CGAL::collinear(p0, p1, q1), "Expect colinearity.");
-                edge_info[key] = std::make_pair(false, q1);
-                oss << q0 << " ";
+                edge_info[key] = std::make_tuple(false, q1, v1);
+                output_info.push_back(std::make_pair(q0, v0));
             }
-        } else if (!edge_info[key].first) {
-            oss << edge_info[key].second << " ";
-            edge_info[key].first = true;
+        } else if (!std::get<0>(edge_info[key])) {
+            const Point_3 p = std::get<1>(edge_info[key]);
+            const int pp = std::get<2>(edge_info[key]);
+            output_info.push_back(std::make_pair(p, pp));
+            edge_info[key] = std::make_tuple(true, p, pp);
             if (enter) {
                 current_edge = cdt.ccw(current_edge);
             } else {
@@ -248,6 +261,40 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const bool use_t
         } else {
             // The cycle closes.
             break;
+        }
+    }
+    std::ostringstream oss;
+    const int output_n = static_cast<int>(output_info.size());
+    int new_start = -1;
+    for (int i = 0; i < output_n - 1; ++i) {
+        if (output_info[i].second != output_info[i + 1].second) {
+            new_start = i + 1;
+            break;
+        }
+    }
+    CheckError(new_start != -1, "Looks like all points are connected to the same parent vertex.");
+    std::vector<std::pair<Point_3, int>> new_output_info(output_info.begin() + new_start, output_info.end());
+    new_output_info.insert(new_output_info.end(), output_info.begin(), output_info.begin() + new_start); 
+    int current_ec = new_output_info[0].second; // Equivalent class.
+    bool collapse_current = rand.get_double() < collapse_prob;
+    bool current_collapsed = false;
+    for (const auto& p : new_output_info) {
+        if (p.second == current_ec) {
+            if (collapse_current) {
+                if (!current_collapsed) oss << polyhedron.vertices()[current_ec] << " ";
+                current_collapsed = true;
+            } else {
+                oss << p.first << " ";
+            }
+        } else {
+            current_ec = p.second;
+            collapse_current = rand.get_double() < collapse_prob;
+            if (collapse_current) {
+                oss << polyhedron.vertices()[current_ec] << " ";
+                current_collapsed = true;
+            } else {
+                oss << p.first << " ";
+            }
         }
     }
     return oss.str();

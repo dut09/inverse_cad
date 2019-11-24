@@ -19,8 +19,12 @@ s = Scene()
 # Create the sofa scene.
 s.LoadTarget("example/sofa.nef3")
 s.ExtrudeFromString("extrude 1 0 0 1 1 0 -1 1 0 -1 0.5 0 0 0.5 0 0 0 0 0 0.1 1 +")
-fid = 0 # Pick facet 0 from the target.
+############## Beginning of parameters ######################
+fid = 0
 use_target = False
+skip_prob = 0.5         # Larger number -> simpler polygon.
+collapse_prob = 0.5     # Larger number -> simpler polygon.
+############## End of parameters ############################
 
 f = s.GetTargetHalfFacet(fid) if use_target else s.GetSceneHalfFacet(fid)
 
@@ -51,7 +55,7 @@ for i in range(100):
     ax.cla()
     for vc in vcs:
         plot_poly(ax, vc, 'b', 'facet')
-    polygon = s.GenerateRandomPolygon(0, use_target)
+    polygon = s.GenerateRandomPolygon(0, skip_prob, collapse_prob, use_target)
     rand_vc = np.asarray([float(v) for v in polygon.strip().split()]).reshape((-1, 3))
     plot_poly(ax, rand_vc, 'r', 'random_{}'.format(i))
     ax.legend()
