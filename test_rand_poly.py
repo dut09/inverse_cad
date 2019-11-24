@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
+import sys
 import numpy as np
 
 from scene import *
@@ -22,8 +23,10 @@ s.ExtrudeFromString("extrude 1 0 0 1 1 0 -1 1 0 -1 0.5 0 0 0.5 0 0 0 0 0 0.1 1 +
 ############## Beginning of parameters ######################
 fid = 0
 use_target = False
-skip_prob = 0.5         # Larger number -> simpler polygon.
-collapse_prob = 0.5     # Larger number -> simpler polygon.
+arguments = sys.argv
+arguments = dict(zip(range(len(arguments)), arguments))
+skip_prob = float(arguments.get(1,0.5))         # Larger number -> simpler polygon.
+collapse_prob = float(arguments.get(2,0.5))     # Larger number -> simpler polygon.
 ############## End of parameters ############################
 
 f = s.GetTargetHalfFacet(fid) if use_target else s.GetSceneHalfFacet(fid)
