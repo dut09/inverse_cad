@@ -1,5 +1,8 @@
 from scene import Scene
 
+import numpy as np
+
+import scipy.spatial
 import random
 import math
 
@@ -31,6 +34,16 @@ class Vertex(Feature):
         return self.p > o.p
     def __lt__(self,o):
         return self.p < o.p
+    def __add__(self,o):
+        if isinstance(o,Vertex):
+            return Vertex(*[A + B for A,B in zip(self.p,o.p) ])
+        assert o == 0
+        return self
+
+    def __radd__(self,o): return self + o
+    def __mul__(self,w):
+        assert isinstance(w,(float,int))
+        return Vertex(*[w*c for c in self.p ])
 
 class Edge(Feature):
     def __init__(self,u,v):
@@ -52,9 +65,9 @@ class Edge(Feature):
     def __repr__(self): return str(self)
 
     def numpy(self):
-        dx = self.e[0].x - self.e[1].x
-        dy = self.e[0].y - self.e[1].y
-        dz = self.e[0].z - self.e[1].z
+        dx = self.e[0].p[0] - self.e[1].p[0]
+        dy = self.e[0].p[1] - self.e[1].p[1]
+        dz = self.e[0].p[2] - self.e[1].p[2]
         return np.array([dx,dy,dz])
 
 class Face(Feature):
@@ -214,19 +227,36 @@ class Extrusion():
             b = Vertex(5,-5,0)
             c = Vertex(5,5,0)
             d = Vertex(-5,5,0)
-            face = Face(frozenset([Edge(a,b),
-                                   Edge(b,c),
-                                   Edge(c,d),
-                                   Edge(d,a)]))
+            face = Face([frozenset([Edge(a,b),
+                                    Edge(b,c),
+                                    Edge(c,d),
+                                    Edge(d,a)])])
 
         edges = face.cycles[0]
         normals = [cp
-                   for e1 in edges for e2 in edges
-                   for cp in [np.cross(e1.numpy(),e2.numpy())]
+                   for _e1 in edges for _e2 in edges
+                   for e1 in [_e1.numpy()]
+                   for e2 in [_e2.numpy()] 
+                   for cp in [np.cross(e1,e2)]
                    if (cp*cp).sum()/((e1*e1).sum()*(e2*e2).sum()) > 0.1]
         normal = random.choice(normals)
         normal = normal/((normal*normal).sum()**0.5)
 
+
+        vs = list({v for e in face.cycles[0] for v in e.e })
+        newVertices = []
+        for _ in range(0,random.choice(range(3,8))):
+            W = np.random.dirichlet([1]*len(vs))
+            V = sum(v*w for v,w in zip(vs,W) )
+            newVertices.append(np.array(V.p))
+        # add a dummy vertex to make them not all be coplanar
+        newVertices.append(newVertices[-1] + normal)
+        
+        H = scipy.spatial.ConvexHull(np.array(newVertices))
+        import pdb; pdb.set_trace()
+        
+        
+        
         
         
         
@@ -273,6 +303,7 @@ class Program():
 
     @staticmethod
     def sample(s):
+        return Program([Extrusion.sample(None)])
         return Program([Extrusion((0, 0.1, 1), True,
                                   [Vertex(1, 0, 0),
                                    Vertex(1, 1, 0),
