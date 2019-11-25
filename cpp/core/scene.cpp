@@ -29,6 +29,21 @@ typedef CGAL::Exact_predicates_tag                                              
 typedef CGAL::Constrained_Delaunay_triangulation_2<Exact_kernel, TDS, Itag>     CDT;
 typedef CGAL::Polygon_2<Exact_kernel>                                           Polygon_2;
 
+static const real SignedArea(const std::vector<Point_3>& polygon, const Vector_3& dir) {
+    const int poly_dof = static_cast<int>(polygon.size());
+    std::vector<Vector_3> offset_polygon;
+    for (const auto& p : polygon) {
+        offset_polygon.push_back(p - polygon[0]);
+    }
+    real vol = 0;
+    for (int i = 0; i < poly_dof; ++i) {
+        const int next_i = (i + 1) % poly_dof;
+        const Vector_3 v0 = offset_polygon[i], v1 = offset_polygon[next_i];
+        vol += CGAL::to_double(CGAL::cross_product(v0, v1) * dir);
+    }
+    return vol;
+}
+
 static void MarkDomains(CDT& ct, CDT::Face_handle start, int index, std::list<CDT::Edge>& border) {
     if (start->info().nesting_level != -1) return;
     std::list<CDT::Face_handle> queue;
@@ -263,6 +278,22 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const real skip_
             break;
         }
     }
+
+    // Print results.
+    // First, determine if we need to flip the polygon.
+    std::vector<Point_3> output_polygon;
+    for (const auto& p : output_info) {
+        output_polygon.push_back(p.first);
+    }
+    std::vector<Point_3> vc_polygon;
+    for (const int vid : vertex_cycle) {
+        vc_polygon.push_back(polyhedron.vertices()[vid]);
+    }
+    if (SignedArea(output_polygon, z) * SignedArea(vc_polygon, z) < 0) {
+        // Reverse the order of output_info.
+        std::reverse(output_info.begin(), output_info.end());
+    }
+
     std::ostringstream oss;
     const int output_n = static_cast<int>(output_info.size());
     int new_start = -1;
