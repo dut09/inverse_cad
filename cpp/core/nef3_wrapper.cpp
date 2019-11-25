@@ -1,6 +1,19 @@
 #include "core/nef3_wrapper.h"
+#include "CGAL/AABB_tree.h"
+#include "CGAL/AABB_traits.h"
+#include "CGAL/AABB_face_graph_triangle_primitive.h"
 #include "core/common.h"
 #include "core/file_helper.h"
+#include "core/triangulation.h"
+
+// Ray tracing.
+typedef Exact_kernel::Segment_3 Segment;
+typedef Exact_kernel::Ray_3 Ray;
+typedef CGAL::AABB_face_graph_triangle_primitive<Polyhedron> Primitive;
+typedef CGAL::AABB_traits<Exact_kernel, Primitive> Traits;
+typedef CGAL::AABB_tree<Traits> Tree;
+typedef boost::optional< Tree::Intersection_and_primitive_id<Segment>::Type > Segment_intersection;
+typedef Tree::Primitive_id Primitive_id;
 
 static const bool CanPermute(const std::vector<int>& cycle1, const std::vector<int>& cycle2) {
     if (cycle1.size() != cycle2.size()) return false;
@@ -35,6 +48,65 @@ static const bool CanPermute(const std::vector<std::vector<int>>& cycles1, const
         if (!same) return false;
     }
     return true;
+}
+
+const bool Nef3Wrapper::IsOutwardHalfFacet(const int fid, const int vc_idx) const {
+    // Step 1: BVH.
+    Polyhedron poly;
+    poly_.convert_to_polyhedron(poly);
+    Tree tree(faces(poly).first, faces(poly).second, poly);
+
+    // Step 2: Compute the bounding box.
+    Vector3r box_min = ToEigenVector3r(vertices_[0]);
+    Vector3r box_max = box_min;
+    for (const auto& v : vertices_) {
+        const Vector3r p = ToEigenVector3r(v);
+        box_min = box_min.cwiseMin(p);
+        box_max = box_max.cwiseMax(p);
+    }
+    const Vector3r center = (box_min + box_max) / 2;
+    // Big enough radius.
+    const real radius = (box_max - box_min).norm() + 1.0;
+
+    // Step 3: Triangulation. The goal is to find a random point on the face.
+    std::vector<Point_3> polygon;
+    for (const int i : half_facets_[fid][vc_idx]) {
+        polygon.push_back(vertices_[i]);
+    }
+    CDT cdt = Triangulate(polygon, half_facets_[fid][vc_idx]);
+
+    CDT::Face_handle root;
+    for (CDT::Finite_faces_iterator fit = cdt.finite_faces_begin(); fit != cdt.finite_faces_end(); ++fit) {
+        if (fit->info().in_domain()) {
+            root = CDT::Face_handle(fit);
+            break;
+        }
+    }
+    std::vector<Point_3> pts(3);
+    for (int i = 0; i < 3; ++i) pts[i] = vertices_[root->vertex(i)->id()];
+    const Vector_3 normal = GetPolygonNormal(polygon);
+
+    // Step 4: Ray tracing.
+    CGAL::Random rand;
+    int inward_cnt = 0, outward_cnt = 0;
+    int test_num = 7;
+    while (!(inward_cnt * 2 > test_num || outward_cnt * 2 > test_num)) {
+        const real w0 = rand.get_double(0, 0.4);
+        const real w1 = rand.get_double(0, 0.4);
+        const Point_3 pt = CGAL::barycenter(pts[0], w0, pts[1], w1, pts[2]);
+        // Randomly generate the origin of the ray.
+        const real theta = rand.get_double() * 3.14;
+        const real phi = rand.get_double() * 2 * 3.14;
+        const Vector3r ray_origin = center + radius * Vector3r(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta));
+        const Point_3 origin(ray_origin.x(), ray_origin.y(), ray_origin.z());
+        Segment query(origin, pt);
+        // Count the number of intesections.
+        const int cnt = tree.number_of_intersected_primitives(query);
+        const Vector_3 dir = pt - origin;
+        if ((dir * normal) * (ToReal(cnt % 2) - ToReal(0.5)) < 0) ++outward_cnt;
+        else ++inward_cnt;
+    }
+    return outward_cnt * 2 > test_num;
 }
 
 void Nef3Wrapper::Load(const std::string& file_name) {
@@ -201,9 +273,77 @@ void Nef3Wrapper::SyncDataStructure() {
 }
 
 void Nef3Wrapper::ComputeFacetOrientation() {
-    // TODO.
     half_facet_outwards_.clear();
-    half_facet_outwards_.resize(half_facets_.size(), true);
+    const int facet_num = static_cast<int>(half_facets_.size());
+    half_facet_outwards_.resize(facet_num, true);
+    // Step 1: for each edge, figure out its two neighbor facets.
+    std::map<std::pair<int, int>, std::pair<int, int>> edge_map;
+    for (int fi = 0; fi < facet_num; ++fi) {
+        for (const auto& vc : half_facets_[fi]) {
+            const int vc_len = static_cast<int>(vc.size());
+            for (int i = 0; i < vc_len; ++i) {
+                const int j = (i + 1) % vc_len;
+                const int e0 = vc[i], e1 = vc[j];
+                const auto key = std::make_pair(e0, e1);
+                if (edge_map.find(key) == edge_map.end()) {
+                    edge_map[key] = std::make_pair(fi, -1);
+                } else {
+                    auto& val = edge_map[key];
+                    CheckError(val.second == -1, "This polyhedron is broken.");
+                    val.second = fi;
+                }
+            }
+        }
+    }
+    // Step 2: BFS.
+    std::vector<bool> visited(facet_num, false);
+    while (true) {
+        // In the remaining unvisited facets, pick the one that has a single vertex cycle.
+        int root_facet = -1;
+        for (int i = 0; i < facet_num; ++i) {
+            if (visited[i]) continue;
+            if (static_cast<int>(half_facets_[i].size()) == 1) {
+                root_facet = i;
+                break;
+            } else {
+                --root_facet;
+            }
+        }
+        // root_facet == -1: Done.
+        // root_facet >= 0: Unfinished.
+        // root_facet < -1: The shape is not a 2-manifold?
+        if (root_facet == -1) break;
+        CheckError(root_facet >= 0, "Each remaining unvisited facet has at least one hole.");
+        const bool root_outward = IsOutwardHalfFacet(root_facet, 0);
+        std::deque<int> queue;
+        queue.push_back(root_facet);
+        visited[root_facet] = true;
+        half_facet_outwards_[root_facet] = root_outward;
+        half_facet_outwards_[half_facet_twins_[root_facet]] = !root_outward;
+        while (!queue.empty()) {
+            const int front = queue.front();
+            queue.pop_front();
+            const bool front_outward = half_facet_outwards_[front];
+            // Loop over its edges.
+            for (const auto& vc : half_facets_[front]) {
+                const int vc_len = static_cast<int>(vc.size());
+                for (int i = 0; i < vc_len; ++i) {
+                    const int j = (i + 1) % vc_len;
+                    const int e0 = vc[i], e1 = vc[j];
+                    // Find my neighbor.
+                    const auto key = std::make_pair(e0, e1);
+                    const auto& val = edge_map.at(key);
+                    const int next_f = val.first == front ? val.second : val.first;
+                    if (visited[next_f]) continue;
+                    // Add new faces.
+                    visited[next_f] = true;
+                    half_facet_outwards_[next_f] = !front_outward;
+                    half_facet_outwards_[half_facet_twins_[next_f]] = front_outward;
+                    queue.push_back(next_f);
+                }
+            }
+        }
+    }
 }
 
 void Nef3Wrapper::Save(const std::string& file_name) {

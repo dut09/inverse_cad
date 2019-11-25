@@ -79,6 +79,7 @@ private:
     void SyncDataStructure();
     // Given vertices, edges, and facets, compute half_facet_outwards_;
     void ComputeFacetOrientation();
+    const bool IsOutwardHalfFacet(const int fid, const int vc_idx) const;
 
     Nef_polyhedron poly_;
 

@@ -1,33 +1,7 @@
 #include "core/scene.h"
-// For triangulation.
-#include "CGAL/Random.h"
-#include "CGAL/Exact_predicates_inexact_constructions_kernel.h"
-#include "CGAL/Constrained_Delaunay_triangulation_2.h"
-#include "CGAL/Triangulation_vertex_base_with_id_2.h"
-#include "CGAL/Triangulation_face_base_with_info_2.h"
-#include "CGAL/Polygon_2.h"
-
 #include "core/common.h"
 #include "core/file_helper.h"
-
-// For triangulation.
-// https://doc.cgal.org/4.14.2/Triangulation_2/index.html
-struct FaceInfo2 {
-    FaceInfo2() {}
-    int nesting_level;
-    bool visited;
-    bool in_domain() { 
-        return nesting_level % 2 == 1;
-    }
-};
-
-typedef CGAL::Triangulation_vertex_base_with_id_2<Exact_kernel>                 Vb;
-typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2, Exact_kernel>      Fbb;
-typedef CGAL::Constrained_triangulation_face_base_2<Exact_kernel, Fbb>          Fb;
-typedef CGAL::Triangulation_data_structure_2<Vb, Fb>                            TDS;
-typedef CGAL::Exact_predicates_tag                                              Itag;
-typedef CGAL::Constrained_Delaunay_triangulation_2<Exact_kernel, TDS, Itag>     CDT;
-typedef CGAL::Polygon_2<Exact_kernel>                                           Polygon_2;
+#include "core/triangulation.h"
 
 static const real SignedArea(const std::vector<Point_3>& polygon, const Vector_3& dir) {
     const int poly_dof = static_cast<int>(polygon.size());
@@ -43,44 +17,6 @@ static const real SignedArea(const std::vector<Point_3>& polygon, const Vector_3
     }
     return vol;
 }
-
-static void MarkDomains(CDT& ct, CDT::Face_handle start, int index, std::list<CDT::Edge>& border) {
-    if (start->info().nesting_level != -1) return;
-    std::list<CDT::Face_handle> queue;
-    queue.push_back(start);
-    while (!queue.empty()) {
-        CDT::Face_handle fh = queue.front();
-        queue.pop_front();
-        if (fh->info().nesting_level == -1) {
-            fh->info().nesting_level = index;
-            for (int i = 0; i < 3; i++) {
-                CDT::Edge e(fh, i);
-                CDT::Face_handle n = fh->neighbor(i);
-                if (n->info().nesting_level == -1) {
-                    if (ct.is_constrained(e)) border.push_back(e);
-                    else queue.push_back(n);
-                }
-            }
-        }
-    }
-}
-
-static void MarkDomains(CDT& cdt) {
-    for (CDT::All_faces_iterator it = cdt.all_faces_begin(); it != cdt.all_faces_end(); ++it) {
-        it->info().nesting_level = -1;
-    }
-    std::list<CDT::Edge> border;
-    MarkDomains(cdt, cdt.infinite_face(), 0, border);
-    while (!border.empty()) {
-        CDT::Edge e = border.front();
-        border.pop_front();
-        CDT::Face_handle n = e.first->neighbor(e.second);
-        if (n->info().nesting_level == -1) {
-            MarkDomains(cdt, n, e.first->info().nesting_level + 1, border);
-        }
-    }
-}
-// End of triangulation.
 
 Scene::Scene() {}
 
@@ -109,42 +45,15 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const real skip_
     CheckError(0 <= f_idx && f_idx < static_cast<int>(polyhedron.half_facets().size()), "f_idx out of range.");
     CheckError(polyhedron.half_facets()[f_idx].size() == 1u, "Polygon with holes is not supported.");
     const std::vector<int>& vertex_cycle = polyhedron.half_facets()[f_idx][0];
-
-    // Project the facet to a 2d polygon.
-    // Build the local frame.
-    const Point_3 v0 = polyhedron.vertices()[vertex_cycle[0]];
-    const Point_3 v1 = polyhedron.vertices()[vertex_cycle[1]];
-    Vector_3 x = v1 - v0;
-    Vector_3 z(0, 0, 0);
+    std::vector<Point_3> vc_polygon;
     for (const int vid : vertex_cycle) {
-        const Point_3& v2 = polyhedron.vertices()[vid];
-        if (!CGAL::collinear(v0, v1, v2)) {
-            z = CGAL::cross_product(x, v2 - v1);
-            break;
-        }
+        vc_polygon.push_back(polyhedron.vertices()[vid]);
     }
-    CheckError(z.squared_length() < 0.5, "Polyhedron is degenerated.");
-    Vector_3 y = CGAL::cross_product(x, z);
-    x /= std::sqrt(CGAL::to_double(x.squared_length()));
-    y /= std::sqrt(CGAL::to_double(y.squared_length()));
-
-    // Add points and constraints.
-    CDT cdt;
-    std::vector<CDT::Point> points;
-    for (const int vid : vertex_cycle) {
-        const Point_3 v = polyhedron.vertices()[vid];
-        const CDT::Point p((v - v0) * x, (v - v0) * y);
-        points.push_back(p);
-        cdt.insert(p)->id() = vid;
-    }
-    cdt.insert_constraint(points.begin(), points.end(), true);
-
-    // Mark facets that are inside the domain bounded by the polygon.
-    MarkDomains(cdt);
+    CDT cdt = Triangulate(vc_polygon, vertex_cycle);
 
     // Random generation.
     int face_cnt = 0;
-    const int expected_face_cnt = static_cast<int>(points.size()) - 2;
+    const int expected_face_cnt = static_cast<int>(vc_polygon.size()) - 2;
     CGAL::Random rand;
     const int root_cnt = rand.get_int(0, expected_face_cnt);
     CDT::Face_handle root;
@@ -285,10 +194,7 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const real skip_
     for (const auto& p : output_info) {
         output_polygon.push_back(p.first);
     }
-    std::vector<Point_3> vc_polygon;
-    for (const int vid : vertex_cycle) {
-        vc_polygon.push_back(polyhedron.vertices()[vid]);
-    }
+    const Vector_3 z = GetPolygonNormal(vc_polygon);
     if (SignedArea(output_polygon, z) * SignedArea(vc_polygon, z) < 0) {
         // Reverse the order of output_info.
         std::reverse(output_info.begin(), output_info.end());
