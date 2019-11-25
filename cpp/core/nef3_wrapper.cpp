@@ -190,6 +190,7 @@ void Nef3Wrapper::SyncDataStructure() {
         }
         half_facets_.push_back(fc_idx);
     }
+    ComputeFacetOrientation();
 
     vertices_match_target_.clear();
     vertices_match_target_.resize(vertices_.size(), false);
@@ -197,6 +198,12 @@ void Nef3Wrapper::SyncDataStructure() {
     half_edges_match_target_.resize(half_edges_.size(), false);
     half_facets_match_target_.clear();
     half_facets_match_target_.resize(half_facets_.size(), false);
+}
+
+void Nef3Wrapper::ComputeFacetOrientation() {
+    // TODO.
+    half_facet_outwards_.clear();
+    half_facet_outwards_.resize(half_facets_.size(), true);
 }
 
 void Nef3Wrapper::Save(const std::string& file_name) {
@@ -438,12 +445,15 @@ void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
     }
     std::vector<std::vector<std::vector<int>>> new_half_facets(facet_num);
     std::vector<int> new_half_facet_twins(facet_num, -1);
+    std::vector<bool> new_half_facet_outwards(facet_num, -1);
     for (int i = 0; i < facet_num; ++i) {
         new_half_facets[old_to_new_facets[i]] = half_facets_[i];
         new_half_facet_twins[old_to_new_facets[i]] = old_to_new_facets[half_facet_twins_[i]];
+        new_half_facet_outwards[old_to_new_facets[i]] = half_facet_outwards_[i];
     }
     new_half_facets.swap(half_facets_);
     new_half_facet_twins.swap(half_facet_twins_);
+    new_half_facet_outwards.swap(half_facet_outwards_);
 }
 
 void Nef3Wrapper::operator+=(const Nef_polyhedron& other) {
@@ -488,14 +498,16 @@ void Nef3Wrapper::ListFacets() const {
     int idx = 0;
     for (const auto& f : half_facets_) {
         if (half_facets_match_target_[idx]) {
-            std::cout << GreenHead() << "f" << idx << "\t" << f.size() << GreenTail() << std::endl;
+            std::cout << GreenHead() << "f" << idx << "\t" << f.size() << "\t"
+                << (half_facet_outwards_[idx] ? "outward" : "inward") << GreenTail() << std::endl;
             for (const auto& fc : f) {
                 for (const int v : fc) std::cout << GreenHead() << "v" << v << "\t";
                 std::cout << GreenTail() << std::endl;
             }
             std::cout << GreenHead() << "twin\t" << "f" << half_facet_twins_[idx] << GreenTail() << std::endl;
         } else {
-            std::cout << "f" << idx << "\t" << f.size() << std::endl;
+            std::cout << "f" << idx << "\t" << f.size() << "\t"
+                << (half_facet_outwards_[idx] ? "outward" : "inward") << std::endl;
             for (const auto& fc : f) {
                 for (const int v : fc) std::cout << "v" << v << "\t";
                 std::cout << std::endl;

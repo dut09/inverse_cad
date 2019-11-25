@@ -75,10 +75,10 @@ Finally, the `ls f` command shows information about the half facets. For each fa
 ```
 >>> ls f
 Face number 26
-f0      1
+f0      1   outward
 v9      v17     v13     v12     v11     v18     v10     v6      v7      v8
 twin    f1
-f1      1
+f1      1   outward
 v9      v8      v7      v6      v10     v18     v11     v12     v13     v17
 twin    f0
 ...

@@ -68,7 +68,8 @@ public:
     const HalfFacetInfo GetHalfFacetInfo(const int fid) const { return {
         "f" + std::to_string(fid),
         half_facets_[fid],
-        half_facet_twins_[fid]
+        half_facet_twins_[fid],
+        half_facet_outwards_[fid],
     }; }
 
 private:
@@ -76,6 +77,8 @@ private:
     const int GetHalfEdgeIndex(const int source, const int target) const;
 
     void SyncDataStructure();
+    // Given vertices, edges, and facets, compute half_facet_outwards_;
+    void ComputeFacetOrientation();
 
     Nef_polyhedron poly_;
 
@@ -84,6 +87,7 @@ private:
     std::vector<int> half_edge_twins_;
     std::vector<std::vector<std::vector<int>>> half_facets_;
     std::vector<int> half_facet_twins_;
+    std::vector<bool> half_facet_outwards_;
 
     std::vector<bool> vertices_match_target_;
     std::vector<bool> half_edges_match_target_;

@@ -81,7 +81,8 @@ for fid in range(s.GetSceneHalfFacetNumber()):
     name = f.name
     cycles = [fc for fc in f.cycles]
     twin = f.twin
-    facets.append((name, cycles, twin))
+    outward = f.outward
+    facets.append((name, cycles, twin, outward))
 print(facets)
 print_info('Press enter to continue.')
 input()
