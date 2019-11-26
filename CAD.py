@@ -99,6 +99,10 @@ class CAD():
     def __init__(self, child=None):
         self.child = child or Scene()
 
+    @property
+    def empty(self):
+        return self.child.GetSceneVertexNumber() == 0
+
     def extrude(self, face, direction, union=True):
         s = self.child.Clone()
         command = []
@@ -109,7 +113,9 @@ class CAD():
             command.append('+')
         else:
             command.append('-')
-        s.ExtrudeFromString(" ".join(["extrude"] + command))
+        command = " ".join(["extrude"] + command)
+        print("command",command)
+        s.ExtrudeFromString(command)
         return CAD(s)
 
     def export(self, fn):
@@ -185,7 +191,7 @@ class Extrusion():
         self.vertices, self.displacement, self.union = vertices, displacement, union
 
     def __str__(self):
-        return f"Extrusion({self.f}, D={self.displacement}, U={self.union})"
+        return f"Extrusion({self.vertices}, D={self.displacement}, U={self.union})"
 
     def __repr__(self):
         return str(self)
@@ -215,12 +221,66 @@ class Extrusion():
         return compilation
 
     def execute(self,c):
+        print("about to execute the extrusion")
+        print(self)
         return c.extrude([v.p for v in self.vertices],
                          self.displacement,
                          self.union)
 
     @staticmethod
-    def sample(c, union=True, face=None):
+    def sample(c, union=True):
+        if c.empty:
+            # initial box
+            c = c.extrude([(0,0,0),
+                           (0,5,0),
+                           (5,5,0),
+                           (5,0,0)],
+                          (0,0,3))
+        faceID = 0#random.choice(range(c.child.GetSceneHalfFacetNumber()))
+        f = c.child.GetSceneHalfFacet(faceID)
+        print("I have selected a face!")
+        print("here is everything on that face:")
+        for e in f.cycles[0]:
+            e = c.child.GetSceneHalfEdge(e)
+            print(f"an edge going from",
+                  Vertex(c.child.GetSceneVertex(e.source)),
+                  Vertex(c.child.GetSceneVertex(e.target)))
+        polygon = c.child.GenerateRandomPolygon(faceID, 0.5, 0.5, False)
+        vertices = np.asarray([float(v) for v in polygon.strip().split()]).reshape((-1, 3))
+
+        # figure out the vector which points out of the object
+        e1 = c.child.GetSceneHalfEdge(f.cycles[0][0])
+        e2 = c.child.GetSceneHalfEdge(f.cycles[0][1])
+
+        v1 = c.child.GetSceneVertex(e1.source)
+        v2 = c.child.GetSceneVertex(e1.target)
+        e1 = np.array([v2.x - v1.x,
+                       v2.y - v1.y,
+                       v2.z - v1.z])
+        v1 = c.child.GetSceneVertex(e2.source)
+        v2 = c.child.GetSceneVertex(e2.target)
+        e2 = np.array([v2.x - v1.x,
+                       v2.y - v1.y,
+                       v2.z - v1.z])
+        print("these edges are on the face")
+        print(e1,e2)
+        normal = np.cross(e1,e2)
+        print("normal",normal)
+        if f.outward: normal = -normal
+        L = ((normal*normal).sum()**0.5)
+        if L < 0.001:
+            import pdb; pdb.set_trace()
+            
+        print(L)
+        normal = normal/L
+
+        magnitude = random.random()*3 + 1
+        direction = list(normal*magnitude)
+        command = Extrusion(direction, union,
+                            [Vertex(*list(v)) for v in vertices])
+        print(command)
+        return command
+            
         if face is None:
             assert union
             a = Vertex(-5,-5,0)
@@ -303,7 +363,7 @@ class Program():
 
     @staticmethod
     def sample(s):
-        return Program([Extrusion.sample(None)])
+        return Program([Extrusion.sample(s)])
         return Program([Extrusion((0, 0.1, 1), True,
                                   [Vertex(1, 0, 0),
                                    Vertex(1, 1, 0),

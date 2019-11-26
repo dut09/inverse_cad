@@ -105,6 +105,8 @@ if __name__ == "__main__":
     O = torch.optim.Adam(m.parameters(), lr=0.0001)
     
     p = Program.sample(CAD())
+    print("about to execute program")
+    print(p)
     t = p.execute(CAD())
     t.export("/tmp/targeting.off")
     states = [State(CAD(),t)]
