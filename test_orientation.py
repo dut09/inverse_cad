@@ -4,6 +4,7 @@ from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import sys
 import numpy as np
+from common import print_info, print_error, print_ok
 
 from scene import *
 
@@ -19,16 +20,6 @@ class Arrow3D(FancyArrowPatch):
         xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
         self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
         FancyArrowPatch.draw(self, renderer)
-
-# Coloful print.
-def print_error(*message):
-    print('\033[91m', 'ERROR ', *message, '\033[0m')
-
-def print_ok(*message):
-    print('\033[92m', *message, '\033[0m')
-
-def print_info(*message):
-    print('\033[93m', *message, '\033[0m')
 ####################### Helper functions. You can skip this section ###################
 
 # Plot.

@@ -1,19 +1,16 @@
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import sys
+import os
 import numpy as np
+import shutil
+try:
+    export_gif_ok = True
+    import export_gif
+except:
+    export_gif_ok = False
 
 from scene import *
-
-# Coloful print.
-def print_error(*message):
-    print('\033[91m', 'ERROR ', *message, '\033[0m')
-
-def print_ok(*message):
-    print('\033[92m', *message, '\033[0m')
-
-def print_info(*message):
-    print('\033[93m', *message, '\033[0m')
 
 s = Scene()
 
@@ -54,7 +51,12 @@ for fc in f.cycles:
 # Pick a facet.
 # 0 is the facet id and True/False means the facet comes from the target/canvas-so-far.
 # Plot the polygon.
-for i in range(100):
+max_iter = 20
+folder = 'rand_poly_gif'
+if os.path.isdir(folder):
+    shutil.rmtree(folder)
+os.makedirs(folder, exist_ok=True)
+for i in range(max_iter):
     ax.cla()
     for vc in vcs:
         plot_poly(ax, vc, 'b', 'facet')
@@ -63,4 +65,8 @@ for i in range(100):
     plot_poly(ax, rand_vc, 'r', 'random_{}'.format(i))
     ax.legend()
     plt.pause(1)
+    plt.savefig(os.path.join(folder, '{:04d}.png'.format(i)))
 plt.show()
+if export_gif_ok:
+    export_gif.run(folder, 'rand_poly.gif', 5)
+shutil.rmtree(folder)

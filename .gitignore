@@ -10,3 +10,4 @@ cpp/core/scene_wrap.cxx
 # Ignore data.
 *.off
 *.nef3
+*.gif
