@@ -45,6 +45,9 @@ class Vertex(Feature):
         assert isinstance(w,(float,int))
         return Vertex(*[w*c for c in self.p ])
 
+    def numpy(self):
+        return np.array(self.p)
+
 class Edge(Feature):
     def __init__(self,u,v):
         if u > v:
@@ -73,17 +76,17 @@ class Edge(Feature):
 class Face(Feature):
     def __init__(self, cycles):
         assert len(cycles) == 1
-        assert all(isinstance(e,Edge)
+        assert all(isinstance(v,Vertex)
                    for c in cycles
-                   for e in c )
+                   for v in c )
         assert all( isinstance(c,frozenset) for c in cycles )
         self.cycles = tuple(cycles)
     def child(self,o):
-        if isinstance(o,Edge): return any( o == e
+        if isinstance(o,Edge): return any( o.child(v)
                                            for c in self.cycles
-                                           for e in c )
+                                           for v in c )
         if isinstance(o,Vertex):
-            return any( e.child(o)
+            return any( e == o
                         for c in self.cycles
                         for e in c )
         return False
@@ -114,8 +117,10 @@ class CAD():
         else:
             command.append('-')
         command = " ".join(["extrude"] + command)
-        print("command",command)
+        print("about to execute command")
+        print(command)
         s.ExtrudeFromString(command)
+        print("successfully executed command")
         return CAD(s)
 
     def export(self, fn):
@@ -147,29 +152,25 @@ class CAD():
             cycles = []
             for cycle in f.cycles:
                 thisCycle = []
-                for e in cycle:                
-                    e = self.child.GetSceneHalfEdge(e)
-                    e = Edge(Vertex(self.child.GetSceneVertex(e.source)),
-                         Vertex(self.child.GetSceneVertex(e.target)))
-                    thisCycle.append(e)
+                for v in cycle:                
+                    v = Vertex(self.child.GetSceneVertex(v))
+                    thisCycle.append(v)
                     
-                # print()
                 cycles.append(frozenset(thisCycle))
             fs.add(Face(cycles))
         return fs
     
     def getFeatures(self):
+        assert False, "not yet implemented correctly"
         # mapping from vertex to index and vice versa
         v2n = {}
         n2v = []
         for n in range(self.child.GetSceneVertexNumber()):
-            print(n)
             v = self.child.GetSceneVertex(n)
             v = Vertex(v.x,v.y,v.z)
             v2n[v] = n
             n2v.append(v)
 
-        print(v2n)
 
         e2n = {}
         n2e = []
@@ -221,8 +222,6 @@ class Extrusion():
         return compilation
 
     def execute(self,c):
-        print("about to execute the extrusion")
-        print(self)
         return c.extrude([v.p for v in self.vertices],
                          self.displacement,
                          self.union)
@@ -236,49 +235,29 @@ class Extrusion():
                            (5,5,0),
                            (5,0,0)],
                           (0,0,3))
-        faceID = 0#random.choice(range(c.child.GetSceneHalfFacetNumber()))
+        faceID = random.choice(range(c.child.GetSceneHalfFacetNumber()))
         f = c.child.GetSceneHalfFacet(faceID)
-        print("I have selected a face!")
-        print("here is everything on that face:")
-        for e in f.cycles[0]:
-            e = c.child.GetSceneHalfEdge(e)
-            print(f"an edge going from",
-                  Vertex(c.child.GetSceneVertex(e.source)),
-                  Vertex(c.child.GetSceneVertex(e.target)))
         polygon = c.child.GenerateRandomPolygon(faceID, 0.5, 0.5, False)
         vertices = np.asarray([float(v) for v in polygon.strip().split()]).reshape((-1, 3))
 
         # figure out the vector which points out of the object
-        e1 = c.child.GetSceneHalfEdge(f.cycles[0][0])
-        e2 = c.child.GetSceneHalfEdge(f.cycles[0][1])
-
-        v1 = c.child.GetSceneVertex(e1.source)
-        v2 = c.child.GetSceneVertex(e1.target)
-        e1 = np.array([v2.x - v1.x,
-                       v2.y - v1.y,
-                       v2.z - v1.z])
-        v1 = c.child.GetSceneVertex(e2.source)
-        v2 = c.child.GetSceneVertex(e2.target)
-        e2 = np.array([v2.x - v1.x,
-                       v2.y - v1.y,
-                       v2.z - v1.z])
-        print("these edges are on the face")
-        print(e1,e2)
-        normal = np.cross(e1,e2)
-        print("normal",normal)
-        if f.outward: normal = -normal
+        v1 = Vertex(c.child.GetSceneVertex(f.cycles[0][0])).numpy()
+        v2 = Vertex(c.child.GetSceneVertex(f.cycles[0][1])).numpy()
+        v3 = Vertex(c.child.GetSceneVertex(f.cycles[0][2])).numpy()
+        normal = np.cross(v2 - v1, v3 - v2)
+        print(f.outward,"facing outward")
+        if not f.outward: normal = -normal        
         L = ((normal*normal).sum()**0.5)
         if L < 0.001:
-            import pdb; pdb.set_trace()
-            
-        print(L)
+            print("for some reason the normal is nothing")
+            return Extrusion.sample(c, union=union)
+        
         normal = normal/L
 
         magnitude = random.random()*3 + 1
         direction = list(normal*magnitude)
         command = Extrusion(direction, union,
                             [Vertex(*list(v)) for v in vertices])
-        print(command)
         return command
             
         if face is None:
@@ -363,7 +342,13 @@ class Program():
 
     @staticmethod
     def sample(s):
-        return Program([Extrusion.sample(s)])
+        commands = []
+        for _ in range(2):#random.choice(range(1,5))):
+            k = Extrusion.sample(s,
+                                 union=True)#random.random() > 0.3)
+            s = k.execute(s)
+            commands.append(k)
+        return Program(commands)
         return Program([Extrusion((0, 0.1, 1), True,
                                   [Vertex(1, 0, 0),
                                    Vertex(1, 1, 0),

@@ -1,4 +1,3 @@
-
 import torch.nn.functional as F
 
 from utilities import *
@@ -103,12 +102,24 @@ class Agent(Module):
 if __name__ == "__main__":
     m = Agent()
     O = torch.optim.Adam(m.parameters(), lr=0.0001)
+
+    for i in range(10):
+        print()
+        print()
+        print("about to sample")
+        p = Program.sample(CAD())
+        print("successfully sampled")
+        continue
     
-    p = Program.sample(CAD())
-    print("about to execute program")
-    print(p)
-    t = p.execute(CAD())
-    t.export("/tmp/targeting.off")
+        print("about to execute program")
+        print(p)
+        t = p.execute(CAD())
+        print("successfully executed now going to export")
+        t.export(f"/tmp/random{i}.off")
+        print("successfully exported")
+        print()
+        print()
+    assert False
     states = [State(CAD(),t)]
     while True:
         actions = p.compile(t)
