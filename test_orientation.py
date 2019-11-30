@@ -4,7 +4,7 @@ from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import sys
 import numpy as np
-from common import print_info, print_error, print_ok
+from common import print_info, print_error, print_ok, str2float
 
 from scene import *
 
@@ -28,7 +28,7 @@ def plot_outward_facets(scene, title):
     for vid in range(scene.GetSceneVertexNumber()):
         v = scene.GetSceneVertex(vid)
         x, y, z = v.x, v.y, v.z
-        vertices.append((x, y, z))
+        vertices.append((str2float(x), str2float(y), str2float(z)))
     vertices = np.asarray(vertices)
 
     fig = plt.figure()
@@ -49,7 +49,7 @@ def plot_outward_facets(scene, title):
                 vcs = vertices[list(fc)]
                 vc_center = np.mean(vcs, 0)
                 if not normal_plotted:
-                    n = np.asarray([float(v) for v in f.normal.split()])
+                    n = np.asarray([str2float(v) for v in f.normal.split()])
                     n /= np.linalg.norm(n)
                     vc_tail = vc_center + n * 0.2
                     a = Arrow3D([vc_center[0], vc_tail[0]], [vc_center[1], vc_tail[1]], [vc_center[2], vc_tail[2]],

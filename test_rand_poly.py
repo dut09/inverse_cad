@@ -11,6 +11,7 @@ except:
     export_gif_ok = False
 
 from scene import *
+from common import str2float
 
 s = Scene()
 
@@ -41,7 +42,7 @@ for fc in f.cycles:
     vc = []
     for vid in f.cycles[0]:
         v = s.GetTargetVertex(vid) if use_target else s.GetSceneVertex(vid)
-        vc.append([v.x, v.y, v.z])
+        vc.append([str2float(v.x), str2float(v.y), str2float(v.z)])
     plot_poly(ax, vc, 'b', 'facet')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
@@ -61,7 +62,7 @@ for i in range(max_iter):
     for vc in vcs:
         plot_poly(ax, vc, 'b', 'facet')
     polygon = s.GenerateRandomPolygon(0, skip_prob, collapse_prob, use_target)
-    rand_vc = np.asarray([float(v) for v in polygon.strip().split()]).reshape((-1, 3))
+    rand_vc = np.asarray([str2float(v) for v in polygon.strip().split()]).reshape((-1, 3))
     plot_poly(ax, rand_vc, 'r', 'random_{}'.format(i))
     ax.legend()
     plt.pause(1)

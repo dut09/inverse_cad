@@ -215,23 +215,22 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const real skip_
     int current_ec = new_output_info[0].second; // Equivalent class.
     bool collapse_current = rand.get_double() < collapse_prob;
     bool current_collapsed = false;
-    // TODO: output exact string for vertices to oss.
     for (const auto& p : new_output_info) {
         if (p.second == current_ec) {
             if (collapse_current) {
-                if (!current_collapsed) oss << polyhedron.vertices()[current_ec] << " ";
+                if (!current_collapsed) oss << polyhedron.vertices()[current_ec].exact() << " ";
                 current_collapsed = true;
             } else {
-                oss << p.first << " ";
+                oss << p.first.exact() << " ";
             }
         } else {
             current_ec = p.second;
             collapse_current = rand.get_double() < collapse_prob;
             if (collapse_current) {
-                oss << polyhedron.vertices()[current_ec] << " ";
+                oss << polyhedron.vertices()[current_ec].exact() << " ";
                 current_collapsed = true;
             } else {
-                oss << p.first << " ";
+                oss << p.first.exact() << " ";
             }
         }
     }

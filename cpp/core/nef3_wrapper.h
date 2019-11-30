@@ -55,9 +55,9 @@ public:
     // For python binding.
     const VertexInfo GetVertexInfo(const int vid) const { return {
         "v" + std::to_string(vid),
-        CGAL::to_double(vertices_[vid].x()),
-        CGAL::to_double(vertices_[vid].y()),
-        CGAL::to_double(vertices_[vid].z())
+        vertices_[vid].x().exact().get_str(),
+        vertices_[vid].y().exact().get_str(),
+        vertices_[vid].z().exact().get_str()
     }; }
     const HalfEdgeInfo GetHalfEdgeInfo(const int eid) const { return {
         "e" + std::to_string(eid),
@@ -67,7 +67,7 @@ public:
     }; }
     const HalfFacetInfo GetHalfFacetInfo(const int fid) const {
         std::ostringstream oss;
-        oss << half_facet_normals_[fid];
+        oss << half_facet_normals_[fid].exact();
         return {
             "f" + std::to_string(fid),
             half_facets_[fid],

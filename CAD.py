@@ -6,6 +6,8 @@ import scipy.spatial
 import random
 import math
 
+from common import str2float    # Converting CGAL string to float.
+
 class Feature():
     def __repr__(self): return str(self)
     def __eq__(self,o): return str(self) == str(o)
@@ -16,7 +18,7 @@ class Vertex(Feature):
     def __init__(self,x,y=None,z=None):
         if y is None:
             x,y,z = x.x,x.y,x.z
-        self.p = np.array([float(x),float(y),float(z)])
+        self.p = np.array([str2float(x),str2float(y),str2float(z)])
         # for bizarre reasons we actually need to represent these as strings
         self.x = str(x)
         self.y = str(y)
@@ -239,7 +241,7 @@ class Extrusion():
         vertices = [Vertex(vertices[3*i],vertices[3*i + 1],vertices[3*i + 2])
                     for i in range(len(vertices)//3)]
         
-        normal = np.asarray([float(v) for v in f.normal.split()])
+        normal = np.asarray([str2float(v) for v in f.normal.split()])
         if not f.outward: normal = -normal
         L = ((normal*normal).sum()**0.5)
         if L < 0.001:

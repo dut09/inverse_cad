@@ -5,8 +5,7 @@
 
 struct VertexInfo {
     std::string name;
-    // TODO: replace real with string.
-    real x, y, z;
+    std::string x, y, z;
 };
 
 struct HalfEdgeInfo {
