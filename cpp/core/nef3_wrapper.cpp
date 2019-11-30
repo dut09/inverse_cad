@@ -378,6 +378,22 @@ public:
         // Check the orientation of the polygon.
         // TODO: maybe CGAL has done this already?
         const int poly_dof = static_cast<int>(polygon_.size());
+        CheckError(poly_dof >= 3, "You need at least three points to define a polygon");
+        // Check if they are on the same plane.
+        const Point_3& v0 = polygon_[0];
+        const Point_3& v1 = polygon_[1];
+        int third = 2;
+        while (third < poly_dof) {
+            const Point_3& v2 = polygon_[third];
+            if (!CGAL::collinear(v0, v1, v2)) break;
+            ++third;
+        }
+        CheckError(third < poly_dof, "Polygon is degenerated into a line.");
+        const Point_3& v2 = polygon_[third];
+        for (int i = third + 1; i < poly_dof; ++i) {
+            CheckError(CGAL::coplanar(v0, v1, v2, polygon_[i]), "Polygon is not defined on a single plane.");
+        }
+        // End of the sanity check.
         std::vector<Vector3r> offset_polygon;
         for (const auto& p : polygon_) {
             offset_polygon.push_back(Nef3Wrapper::ToEigenVector3r(p));
