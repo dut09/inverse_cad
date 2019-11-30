@@ -215,6 +215,7 @@ const std::string Scene::GenerateRandomPolygon(const int f_idx, const real skip_
     int current_ec = new_output_info[0].second; // Equivalent class.
     bool collapse_current = rand.get_double() < collapse_prob;
     bool current_collapsed = false;
+    // TODO: output exact string for vertices to oss.
     for (const auto& p : new_output_info) {
         if (p.second == current_ec) {
             if (collapse_current) {

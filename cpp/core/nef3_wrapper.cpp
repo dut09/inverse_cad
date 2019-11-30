@@ -690,6 +690,7 @@ void Nef3Wrapper::operator-=(const Nef_polyhedron& other) {
 void Nef3Wrapper::ListVertices() const {
     std::cout << "Vertex number " << vertices_.size() << std::endl;
     int idx = 0;
+    // TODO: output exact string for v.
     for (const auto& v : vertices_) {
         if (vertices_match_target_[idx])
             std::cout << GreenHead() << "v" << idx << "\t" << v << GreenTail() << std::endl;
@@ -714,6 +715,7 @@ void Nef3Wrapper::ListEdges() const {
 }
 
 void Nef3Wrapper::ListFacets() const {
+    // TODO: output exact string for half_facet_normals_[idx].
     std::cout << "Face number " << half_facets_.size() << std::endl;
     int idx = 0;
     for (const auto& f : half_facets_) {
