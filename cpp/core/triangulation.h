@@ -34,6 +34,7 @@ typedef CGAL::Constrained_Delaunay_triangulation_2<Exact_kernel, TDS, Itag>     
 typedef CGAL::Polygon_2<Exact_kernel>                                           Polygon_2;
 
 const Vector_3 GetPolygonNormal(const std::vector<Point_3>& polygon);
+CDT Triangulate(const std::vector<std::vector<Point_3>>& polygon, const std::vector<std::vector<int>>& vertex_cycle);
 CDT Triangulate(const std::vector<Point_3>& polygon, const std::vector<int>& vertex_cycle);
 
 #endif

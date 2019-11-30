@@ -20,6 +20,7 @@ struct HalfFacetInfo {
     std::vector<std::vector<int>> cycles;
     int twin;
     bool outward;
+    std::string normal;
 };
 
 #endif

@@ -61,6 +61,39 @@ const Vector_3 GetPolygonNormal(const std::vector<Point_3>& polygon) {
     return z;
 }
 
+CDT Triangulate(const std::vector<std::vector<Point_3>>& polygon, const std::vector<std::vector<int>>& vertex_cycle) {
+    CheckError(!polygon.empty() && polygon.size() == vertex_cycle.size(), "Inconsistent polygon and vertex_cycle size.");
+    const int loop_num = static_cast<int>(polygon.size());
+    for (int i = 0; i < loop_num; ++i) {
+        CheckError(!polygon[i].empty() && polygon[i].size() == vertex_cycle[i].size(), "Inconsistent polygon and vertex_cycle size.");
+    }
+    // Get normal (does not matter even if the normal is flipped.)
+    const Point_3 v0 = polygon[0][0];
+    Vector_3 x = polygon[0][1] - v0;
+    const Vector_3 z = GetPolygonNormal(polygon[0]);
+    Vector_3 y = CGAL::cross_product(x, z);
+    x /= std::sqrt(CGAL::to_double(x.squared_length()));
+    y /= std::sqrt(CGAL::to_double(y.squared_length()));
+
+    // Add points and constraints.
+    CDT cdt;
+    for (int l = 0; l < loop_num; ++l) {
+        std::vector<CDT::Point> points;
+        const int n = static_cast<int>(polygon[l].size());
+        for (int i = 0; i < n; ++i) {
+            const Point_3 v = polygon[l][i];
+            const CDT::Point p((v - v0) * x, (v - v0) * y);
+            points.push_back(p);
+            cdt.insert(p)->id() = vertex_cycle[l][i];
+        }
+        cdt.insert_constraint(points.begin(), points.end(), true);
+    }
+    // Mark facets that are inside the domain bounded by the polygon.
+    MarkDomains(cdt);
+
+    return cdt;
+}
+
 CDT Triangulate(const std::vector<Point_3>& polygon, const std::vector<int>& vertex_cycle) {
     CheckError(polygon.size() == vertex_cycle.size(), "Inconsistent polygon and vertex_cycle size.");
     const Point_3 v0 = polygon[0];

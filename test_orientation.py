@@ -43,9 +43,19 @@ def plot_outward_facets(scene, title):
             # Plot this half facet.
             cnt += 1
             color = np.random.rand(3)
+            # Plot normals.
+            normal_plotted = False
             for fc in f.cycles:
                 vcs = vertices[list(fc)]
                 vc_center = np.mean(vcs, 0)
+                if not normal_plotted:
+                    n = np.asarray([float(v) for v in f.normal.split()])
+                    n /= np.linalg.norm(n)
+                    vc_tail = vc_center + n * 0.2
+                    a = Arrow3D([vc_center[0], vc_tail[0]], [vc_center[1], vc_tail[1]], [vc_center[2], vc_tail[2]],
+                        mutation_scale=15, lw=3, arrowstyle='-|>', color=color)
+                    ax.add_artist(a)
+                    normal_plotted = True
                 vcs = (vcs - vc_center) * 0.95 + vc_center
                 vc_cnt = len(fc)
                 for i in range(vc_cnt):
@@ -54,7 +64,7 @@ def plot_outward_facets(scene, title):
                     # Plot edge vi -> vj.
                     ax.plot([vi[0]], [vi[1]], [vi[2]], 'k')
                     a = Arrow3D([vi[0], vj[0]], [vi[1], vj[1]], [vi[2], vj[2]], mutation_scale=15,
-                                 lw=3, arrowstyle="-|>", color=color)
+                                 lw=3, arrowstyle='-|>', color=color)
                     ax.add_artist(a)
     assert(cnt * 2 == scene.GetSceneHalfFacetNumber())
 

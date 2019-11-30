@@ -263,6 +263,7 @@ void Nef3Wrapper::SyncDataStructure() {
         half_facets_.push_back(fc_idx);
     }
     ComputeFacetOrientation();
+    ComputeFacetNormal();
 
     vertices_match_target_.clear();
     vertices_match_target_.resize(vertices_.size(), false);
@@ -270,6 +271,62 @@ void Nef3Wrapper::SyncDataStructure() {
     half_edges_match_target_.resize(half_edges_.size(), false);
     half_facets_match_target_.clear();
     half_facets_match_target_.resize(half_facets_.size(), false);
+}
+
+void Nef3Wrapper::ComputeFacetNormal() {
+    half_facet_normals_.clear();
+    const int facet_num = static_cast<int>(half_facets_.size());
+    half_facet_normals_.resize(facet_num, Vector_3(1, 0, 0));
+    std::vector<bool> solved(facet_num, false);
+    for (int fi = 0; fi < facet_num; ++fi) {
+        if (solved[fi]) continue;
+        std::vector<std::vector<Point_3>> polygon;
+        for (const auto& vc : half_facets_[fi]) {
+            std::vector<Point_3> p;
+            for (const int i : vc) p.push_back(vertices_[i]);
+            polygon.push_back(p);
+        }
+        CDT cdt = Triangulate(polygon, half_facets_[fi]);
+
+        CDT::Face_handle inf_face = cdt.infinite_face();
+        bool found_edge = false;
+        for (int i = 0; i < 3; ++i) {
+            CDT::Edge e(inf_face, i);
+            if (cdt.is_constrained(e)) {
+                found_edge = true;
+                CDT::Face_handle n = inf_face->neighbor(i);
+                const int v0 = inf_face->vertex(cdt.cw(i))->id();
+                const int v1 = inf_face->vertex(cdt.ccw(i))->id();
+                // (v0, v1) must be an edge.
+                const int v2 = n->vertex(0)->id() + n->vertex(1)->id() + n->vertex(2)->id() - v0 - v1;
+                // Figure out the direction of v0 and v1.
+                bool swap = false;
+                bool visited = false;
+                for (const auto& vc : half_facets_[fi]) {
+                    const int vc_len = static_cast<int>(vc.size());
+                    for (int j = 0; j < vc_len; ++j) {
+                        if (vc[j] == v0) {
+                            const int j1 = vc[(j + 1) % vc_len];
+                            const int j0 = vc[(j + vc_len - 1) % vc_len];
+                            CheckError(j1 == v1 || j0 == v1, "Missing an edge in polygon.");
+                            swap = j0 == v1;
+                            visited = true;
+                            break;
+                        }
+                    }
+                }
+                CheckError(visited, "Vertex does not exist in the polyon.");
+                const Point_3 p0 = swap ? vertices_[v1] : vertices_[v0];
+                const Point_3 p1 = swap ? vertices_[v0] : vertices_[v1];
+                const Point_3 p2 = vertices_[v2];
+                half_facet_normals_[fi] = CGAL::normal(p0, p1, p2);
+                solved[fi] = solved[half_facet_twins_[fi]] = true;
+                half_facet_normals_[half_facet_twins_[fi]] = -half_facet_normals_[fi];
+                break;
+            }
+        }
+        CheckError(found_edge, "Infinite face in triangulation should be adjacent to an edge.");
+    }
 }
 
 void Nef3Wrapper::ComputeFacetOrientation() {
@@ -602,14 +659,17 @@ void Nef3Wrapper::Regularize(const Nef3Wrapper& other, const real eps) {
     std::vector<std::vector<std::vector<int>>> new_half_facets(facet_num);
     std::vector<int> new_half_facet_twins(facet_num, -1);
     std::vector<bool> new_half_facet_outwards(facet_num, -1);
+    std::vector<Vector_3> new_half_facet_normals(facet_num);
     for (int i = 0; i < facet_num; ++i) {
         new_half_facets[old_to_new_facets[i]] = half_facets_[i];
         new_half_facet_twins[old_to_new_facets[i]] = old_to_new_facets[half_facet_twins_[i]];
         new_half_facet_outwards[old_to_new_facets[i]] = half_facet_outwards_[i];
+        new_half_facet_normals[old_to_new_facets[i]] = half_facet_normals_[i];
     }
     new_half_facets.swap(half_facets_);
     new_half_facet_twins.swap(half_facet_twins_);
     new_half_facet_outwards.swap(half_facet_outwards_);
+    new_half_facet_normals.swap(half_facet_normals_);
 }
 
 void Nef3Wrapper::operator+=(const Nef_polyhedron& other) {
@@ -661,6 +721,7 @@ void Nef3Wrapper::ListFacets() const {
                 std::cout << GreenTail() << std::endl;
             }
             std::cout << GreenHead() << "twin\t" << "f" << half_facet_twins_[idx] << GreenTail() << std::endl;
+            std::cout << GreenHead() << "normal\t" << half_facet_normals_[idx] << GreenTail() << std::endl;
         } else {
             std::cout << "f" << idx << "\t" << f.size() << "\t"
                 << (half_facet_outwards_[idx] ? "outward" : "inward") << std::endl;
@@ -669,6 +730,7 @@ void Nef3Wrapper::ListFacets() const {
                 std::cout << std::endl;
             }
             std::cout << "twin\t" << "f" << half_facet_twins_[idx] << std::endl;
+            std::cout << "normal\t" << half_facet_normals_[idx] << std::endl;
         }
         ++idx;
     }

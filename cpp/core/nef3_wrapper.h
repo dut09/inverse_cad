@@ -65,12 +65,17 @@ public:
         half_edges_[eid].second,
         half_edge_twins_[eid]
     }; }
-    const HalfFacetInfo GetHalfFacetInfo(const int fid) const { return {
-        "f" + std::to_string(fid),
-        half_facets_[fid],
-        half_facet_twins_[fid],
-        half_facet_outwards_[fid],
-    }; }
+    const HalfFacetInfo GetHalfFacetInfo(const int fid) const {
+        std::ostringstream oss;
+        oss << half_facet_normals_[fid];
+        return {
+            "f" + std::to_string(fid),
+            half_facets_[fid],
+            half_facet_twins_[fid],
+            half_facet_outwards_[fid],
+            oss.str()
+        };
+    }
 
 private:
     const int GetVertexIndex(const Point_3& vertex) const;
@@ -78,6 +83,7 @@ private:
 
     void SyncDataStructure();
     // Given vertices, edges, and facets, compute half_facet_outwards_;
+    void ComputeFacetNormal();
     void ComputeFacetOrientation();
     const bool IsOutwardHalfFacet(const int fid, const int vc_idx) const;
 
@@ -89,6 +95,7 @@ private:
     std::vector<std::vector<std::vector<int>>> half_facets_;
     std::vector<int> half_facet_twins_;
     std::vector<bool> half_facet_outwards_;
+    std::vector<Vector_3> half_facet_normals_;
 
     std::vector<bool> vertices_match_target_;
     std::vector<bool> half_edges_match_target_;
