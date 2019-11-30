@@ -33,6 +33,9 @@ def showExtrusion(vertices, displacement):
     ax.plot(vertices[:,0],vertices[:,1],vertices[:,2],
             color=COLORS[0])
 
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
     COLORS = COLORS[1:]
 
 commands = {'0': ["5 0 0 5 0 2.68747 5 1.74934 3 5 5 3 3.6042687739429273 0.0 0.0",

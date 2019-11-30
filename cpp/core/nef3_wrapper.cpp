@@ -288,44 +288,49 @@ void Nef3Wrapper::ComputeFacetNormal() {
         }
         CDT cdt = Triangulate(polygon, half_facets_[fi]);
 
-        CDT::Face_handle inf_face = cdt.infinite_face();
-        bool found_edge = false;
-        for (int i = 0; i < 3; ++i) {
-            CDT::Edge e(inf_face, i);
-            if (cdt.is_constrained(e)) {
-                found_edge = true;
-                CDT::Face_handle n = inf_face->neighbor(i);
-                const int v0 = inf_face->vertex(cdt.cw(i))->id();
-                const int v1 = inf_face->vertex(cdt.ccw(i))->id();
-                // (v0, v1) must be an edge.
-                const int v2 = n->vertex(0)->id() + n->vertex(1)->id() + n->vertex(2)->id() - v0 - v1;
-                // Figure out the direction of v0 and v1.
-                bool swap = false;
-                bool visited = false;
-                for (const auto& vc : half_facets_[fi]) {
-                    const int vc_len = static_cast<int>(vc.size());
-                    for (int j = 0; j < vc_len; ++j) {
-                        if (vc[j] == v0) {
-                            const int j1 = vc[(j + 1) % vc_len];
-                            const int j0 = vc[(j + vc_len - 1) % vc_len];
-                            CheckError(j1 == v1 || j0 == v1, "Missing an edge in polygon.");
-                            swap = j0 == v1;
-                            visited = true;
-                            break;
+        bool found = false;
+        for (CDT::Finite_faces_iterator fit = cdt.finite_faces_begin(); fit != cdt.finite_faces_end() && !found; ++fit) {
+            if (fit->info().in_domain()) {
+                // Check if it has a constraint edge.
+                CDT::Face_handle fh = CDT::Face_handle(fit);
+                for (int i = 0; i < 3; ++i) {
+                    CDT::Edge e(fh, i);
+                    if (cdt.is_constrained(e)) {
+                        found = true;
+                        const int v0 = fh->vertex(cdt.cw(i))->id();
+                        const int v1 = fh->vertex(cdt.ccw(i))->id();
+                        // (v0, v1) must be an edge.
+                        const int v2 = fh->vertex(0)->id() + fh->vertex(1)->id() + fh->vertex(2)->id() - v0 - v1;
+                        // Figure out the direction of v0 and v1.
+                        bool swap = false;
+                        bool visited = false;
+                        for (const auto& vc : half_facets_[fi]) {
+                            const int vc_len = static_cast<int>(vc.size());
+                            for (int j = 0; j < vc_len; ++j) {
+                                if (vc[j] == v0) {
+                                    const int j1 = vc[(j + 1) % vc_len];
+                                    const int j0 = vc[(j + vc_len - 1) % vc_len];
+                                    CheckError(j1 == v1 || j0 == v1, "Missing an edge in polygon.");
+                                    swap = j0 == v1;
+                                    visited = true;
+                                    break;
+                                }
+                            }
+                            if (visited) break;
                         }
+                        CheckError(visited, "Vertex does not exist in the polyon.");
+                        const Point_3 p0 = swap ? vertices_[v1] : vertices_[v0];
+                        const Point_3 p1 = swap ? vertices_[v0] : vertices_[v1];
+                        const Point_3 p2 = vertices_[v2];
+                        half_facet_normals_[fi] = CGAL::normal(p0, p1, p2);
+                        solved[fi] = solved[half_facet_twins_[fi]] = true;
+                        half_facet_normals_[half_facet_twins_[fi]] = -half_facet_normals_[fi];
+                        break;
                     }
                 }
-                CheckError(visited, "Vertex does not exist in the polyon.");
-                const Point_3 p0 = swap ? vertices_[v1] : vertices_[v0];
-                const Point_3 p1 = swap ? vertices_[v0] : vertices_[v1];
-                const Point_3 p2 = vertices_[v2];
-                half_facet_normals_[fi] = CGAL::normal(p0, p1, p2);
-                solved[fi] = solved[half_facet_twins_[fi]] = true;
-                half_facet_normals_[half_facet_twins_[fi]] = -half_facet_normals_[fi];
-                break;
             }
         }
-        CheckError(found_edge, "Infinite face in triangulation should be adjacent to an edge.");
+        CheckError(found, "This face does not contain a triangle adjacent to its edges.");
     }
 }
 
@@ -686,11 +691,10 @@ void Nef3Wrapper::ListVertices() const {
     std::cout << "Vertex number " << vertices_.size() << std::endl;
     int idx = 0;
     for (const auto& v : vertices_) {
-        const real x = CGAL::to_double(v.x()), y = CGAL::to_double(v.y()), z = CGAL::to_double(v.z());
         if (vertices_match_target_[idx])
-            std::cout << GreenHead() << "v" << idx << "\t" << x << "\t" << y << "\t" << z << GreenTail() << std::endl;
+            std::cout << GreenHead() << "v" << idx << "\t" << v << GreenTail() << std::endl;
         else
-            std::cout << "v" << idx << "\t" << x << "\t" << y << "\t" << z << std::endl;
+            std::cout << "v" << idx << "\t" << v << std::endl;
         ++idx;
     }
 }
