@@ -99,8 +99,7 @@ const bool EndsWith(const std::string& str, const std::string& substr) {
 void CheckError(const bool condition, const std::string& error_message) {
 #ifdef SAFETY_CHECK
     if (!condition) {
-        PrintError(error_message);
-        exit(0);
+        throw std::runtime_error(RedHead() + error_message + RedTail());
     }
 #endif
 }
