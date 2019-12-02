@@ -8,6 +8,8 @@ import math
 
 from common import str2float    # Converting CGAL string to float.
 
+class FaceFailure(Exception): pass
+
 class Feature():
     def __repr__(self): return str(self)
     def __eq__(self,o): return str(self) == str(o)
@@ -73,7 +75,8 @@ class Edge(Feature):
 
 class Face(Feature):
     def __init__(self, cycles):
-        assert len(cycles) == 1
+        if len(cycles) != 1:
+            raise FaceFailure()
         assert all(isinstance(v,Vertex)
                    for c in cycles
                    for v in c )
@@ -115,10 +118,8 @@ class CAD():
         else:
             command.append('-')
         command = " ".join(["extrude"] + command)
-        print("about to execute command")
         print(command)
         s.ExtrudeFromString(command)
-        print("successfully executed command")
         return CAD(s)
 
     def export(self, fn):
@@ -195,7 +196,7 @@ class Extrusion():
     def __repr__(self):
         return str(self)
 
-    def compile(self, target):
+    def compile(self, target, canvas):
         from state import NextVertex, Extrude
         vs = list(self.vertices)
         if not self.union:
@@ -204,17 +205,30 @@ class Extrusion():
             print(vs)
             print("here are the vertices inside of the target")
             print(target.getVertices())
+
+        # in order for this to work we need to be able to find every single vertex in the base
+        possibleFinalVertices = []
+        for v in vs:
+            if target.findClose(v) is None and canvas.findClose(v) is None:
+                return None
+            connection = v + Vertex(*self.displacement)
+            if target.findClose(v) is not None or canvas.findClose(v) is not None:
+                possibleFinalVertices.append(v)
+        if len(possibleFinalVertices) == 0: return None
+        
         # want to pick a random rotation of the vertices
         if random.random() > 0.5:
             vs.reverse()
-        N = random.choice(range(len(vs)))
+
+        # now we need to pick a random (circular) ordering of the vertices such that the final 
+        N = random.choice([N for N in range(len(vs))
+                           if vs[(-1+N)] in possibleFinalVertices])
         vs = vs[N:] + vs[:N]
+        assert vs[-1] in possibleFinalVertices
         compilation = [ NextVertex(v) for v in vs ]
         base = vs[-1]
-        connection = Vertex(base.p[0] + self.displacement[0],
-                            base.p[1] + self.displacement[1],
-                            base.p[2] + self.displacement[2])
-        connection = target.findClose(connection)
+        connection = base + Vertex(*self.displacement)
+        connection = target.findClose(connection) or canvas.findClose(connection)
         if connection is None: return None
         compilation.append(Extrude(connection, self.union))
         return compilation
@@ -236,7 +250,6 @@ class Extrusion():
         faceID = random.choice(range(c.child.GetSceneHalfFacetNumber()))
         f = c.child.GetSceneHalfFacet(faceID)
         polygon = c.child.GenerateRandomPolygon(faceID, 0.5, 0.5, False)
-        print("created random polygon",polygon)
         vertices = polygon.strip().split()
         vertices = [Vertex(vertices[3*i],vertices[3*i + 1],vertices[3*i + 2])
                     for i in range(len(vertices)//3)]
@@ -263,12 +276,16 @@ class Program():
         for k in self.commands: c = k.execute(c)
         return c
 
-    def compile(self, target):
+    def compile(self, target=None, canvas=None):
+        if target is None: target = self.execute(CAD())
+        if canvas is None: canvas = CAD()
+        
         actions = []
         for k in self.commands:
-            compilation = k.compile(target)
+            compilation = k.compile(target, canvas)
             if compilation is None: return None
             actions.extend(compilation)
+            canvas = k.execute(canvas)
         return actions
 
     def __str__(self):
@@ -286,6 +303,9 @@ class Program():
             s = k.execute(s)
             commands.append(k)
         return Program(commands)
+
+    @staticmethod
+    def couch():
         return Program([Extrusion((0, 0.1, 1), True,
                                   [Vertex(1, 0, 0),
                                    Vertex(1, 1, 0),
@@ -303,25 +323,3 @@ class Program():
                             Vertex(-0.8, 0.8, 1)
                         ])
         ])
-                            
-        angle = 0
-        N = random.choice(range(3,8))
-        r = random.random() + 1
-        face = [Vertex(r,r,0)]
-        for _ in range(N - 1):            
-            d_angle = 2*math.pi/N#6.28/N
-
-            x,y,_ = face[-1].p
-            x = x + r*math.cos(angle + d_angle)
-            y = y + r*math.sin(angle + d_angle)
-
-            angle += d_angle
-
-            face.append(Vertex(x,y,0))
-        command1 = Extrusion((0,0,1),True,face)
-
-        subtraction = [Vertex(v.p[0] + 1.,v.p[1] + 1.,v.p[2] + 1.)
-                       for v in face[:3]]
-        command2 = Extrusion((0,0,-0.5),False,subtraction)
-
-        return Program([command1, command2])

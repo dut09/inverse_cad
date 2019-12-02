@@ -93,6 +93,19 @@ class Agent(Module):
             2: lambda v: Extrude(v, True)
             }
         return codeToAction[code[0]](code[1])
+
+    def rollout(self, spec, maximumLength):
+        states = [State(CAD(), spec)]
+        for _ in range(maximumLength):
+            a = self.sample(states[-1])
+            try:
+                actions.append(a)
+                states.append(a(states[-1]))
+            except: break
+
+        return states, actions
+            
+                
         
         
         
@@ -102,45 +115,50 @@ class Agent(Module):
 if __name__ == "__main__":
     m = Agent()
     O = torch.optim.Adam(m.parameters(), lr=0.0001)
+    iteration = 0
+    while True:
+        # make a training set of actions/states
+        while True:
+            p = Program.sample(CAD())
+            t = p.execute(CAD())
+            for _ in range(10):
+                actions = p.compile()
+                if actions is not None: break
+            if actions is None: continue
 
-    for i in range(10):
-        print()
-        print()
-        print("about to sample")
-        p = Program.sample(CAD())
-        print("successfully sampled")
-        continue
-    
-        print("about to execute program")
-        print(p)
-        t = p.execute(CAD())
-        print("successfully executed now going to export")
-        t.export(f"/tmp/random{i}.off")
-        print("successfully exported")
-        print()
-        print()
-    assert False
-    states = [State(CAD(),t)]
-    while True:
-        actions = p.compile(t)
-        if actions is not None:
+            try:
+                states = [State(CAD(),t)]
+            except FaceFailure: continue
+            
+            for a in actions:
+                states.append(a(states[-1]))
             break
-    print("here are the actions")
-    for a in actions:
-        print(a)
-        
-    for a in actions:
-        states.append(a(states[-1]))
-    while True:
+
+        print("Training on the following program:")
+        print(p)
+        print("which gives the following target:")
+        print(t)
+        print("and has the following actions:")
+        for a in actions:
+            print(a)
+            
         m.zero_grad()
         L = 0
         for a,s in zip(actions,states):
             L += m.loss(s, a)
+        L = L/len(actions)
         L.backward()
         O.step()
-        print(L)
-        if L < 0.1:
-            break
+        print(f"LOSS {iteration}\t",L)
+        iteration += 1
+        if iteration%100 == 1:
+            print("going to try a rollout both on some random data and on the couch")
+            for target,maximumLength in [(t,len(actions)),
+                                         (Program.couch().execute(CAD()),2)]:
+                states, actions = m.rollout(target,maximumLength)
+                name = "random" if target is t else "couch"
+                target.export(f"/tmp/{name}_target.off")
+                states[-1].canvas.export(f"/tmp/{name}_reconstruction.off")
 
     states = [states[0]]
     for _ in range(len(actions)):

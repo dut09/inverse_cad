@@ -81,6 +81,7 @@ class State():
         if canvas: self.canvas_features.add(v)
         if vp is None:
             self.vertices.append(v)
+        return v
 
     def findClose(self,v):
         if isinstance(v,Vertex):
@@ -114,7 +115,7 @@ class State():
         return e
 
     def registerFace(self,f, spec, canvas):
-        f = Face([ frozenset(self.registerEdge(e, spec, canvas) for e in cycle)
+        f = Face([ frozenset(self.registerVertex(v, spec, canvas) for v in cycle)
                    for cycle in f.cycles ])
         if spec: self.target_features.add(f)
         if canvas: self.canvas_features.add(f)
@@ -169,12 +170,14 @@ class Extrude(Action):
         if len(el) != 1: raise Death()
 
         el = el[0]
-        print(f"Invoking extrusion. Cackling vector from\t{self.v}\t{el}")
+        print(f"Invoking extrusion. calculating vector from\t{self.v}\t{el}")
         displacement = (self.v.p[0] - el.p[0],
                         self.v.p[1] - el.p[1],
                         self.v.p[2] - el.p[2])
 
-        face = [v.p #(v.p.x,v.p.y,v.p.z)
+        print("Here is the face:")
+        print(s.extrude_vertices)
+        face = [(v.x,v.y,v.z)
                 for v in s.extrude_vertices]
         newCanvas = s.canvas.extrude(face, displacement, self.union)
         print("successfully invoked extrusion")
@@ -184,12 +187,24 @@ class Extrude(Action):
     
 if __name__ == "__main__":
     from CAD import *
-    p = Program.sample(None)
-    t = p.execute(CAD())
-    states = [State(CAD(),t)]
-    actions = p.compile(t)
-    for a in actions:
-        states.append(a(states[-1]))
-    t.export("/tmp/targeting.off")
-    states[-1].canvas.export("/tmp/reconstruction.off")
-    
+    while True:
+        while True:
+            try:
+                p = Program.sample(CAD())
+                t = p.execute(CAD())
+                states = [State(CAD(),t)]
+                actions = p.compile(t)
+            except RuntimeError: continue
+            if actions is None: continue
+            for k in p.commands:
+                print(k)
+            print()
+
+            for a in actions:
+                print(a)
+                states.append(a(states[-1]))
+            t.export("/tmp/targeting.off")
+            states[-1].canvas.export("/tmp/reconstruction.off")
+            break
+
+
