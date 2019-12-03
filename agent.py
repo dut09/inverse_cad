@@ -96,6 +96,7 @@ class Agent(Module):
 
     def rollout(self, spec, maximumLength):
         states = [State(CAD(), spec)]
+        actions = []
         for _ in range(maximumLength):
             a = self.sample(states[-1])
             try:
@@ -108,69 +109,103 @@ class Agent(Module):
                 
         
         
-        
+def makeExample():        
+    while True:
+        p = Program.sample(CAD())
+        t = p.execute(CAD())
+        for _ in range(10):
+            actions = p.compile()
+            if actions is not None: break
+        if actions is None: continue
 
+        try:
+            states = [State(CAD(),t)]
+        except FaceFailure: continue
+
+        for a in actions:
+            states.append(a(states[-1]))
+        break
+    return states, actions, t, p
 
 
 if __name__ == "__main__":
-    m = Agent()
-    O = torch.optim.Adam(m.parameters(), lr=0.0001)
-    iteration = 0
-    while True:
-        # make a training set of actions/states
+    import argparse
+    parser = argparse.ArgumentParser(description = "")
+    parser.add_argument("--load","-l",default=None)
+    parser.add_argument("--save","-s",default=None)
+    parser.add_argument("--test",default=False,action='store_true')
+    
+    arguments = parser.parse_args()
+
+    if arguments.load:
+        m = torch.load(arguments.load)
+    else:
+        assert not arguments.test, "you need to tell me what checkpoint to load if you are testing"
+        m = Agent()
+
+    if not arguments.test:
+        O = torch.optim.Adam(m.parameters(), lr=0.0001)
+        iteration = 0
         while True:
-            p = Program.sample(CAD())
-            t = p.execute(CAD())
-            for _ in range(10):
-                actions = p.compile()
-                if actions is not None: break
-            if actions is None: continue
+            # make a training set of actions/states
+            states, actions, t, p = makeExample()
 
-            try:
-                states = [State(CAD(),t)]
-            except FaceFailure: continue
-            
+            print("Training on the following program:")
+            print(p)
+            print("which gives the following target:")
+            print(t)
+            print("and has the following actions:")
             for a in actions:
-                states.append(a(states[-1]))
-            break
+                print(a)
 
-        print("Training on the following program:")
-        print(p)
-        print("which gives the following target:")
-        print(t)
-        print("and has the following actions:")
-        for a in actions:
+            m.zero_grad()
+            L = 0
+            for a,s in zip(actions,states):
+                L += m.loss(s, a)
+            L = L/len(actions)
+            L.backward()
+            O.step()
+            print(f"LOSS {iteration}\t",L)
+            iteration += 1
+            if iteration%50 == 1:
+                if arguments.save:
+                    torch.save(m,arguments.save)
+                print("going to try a rollout both on some random data and on the couch")
+                for target,maximumLength in [(t,len(actions)),
+                                             (Program.couch().execute(CAD()),2)]:
+                    states, actions = m.rollout(target,maximumLength)
+                    name = "random" if target is t else "couch"
+                    target.export(f"/tmp/{name}_target.off")
+                    states[-1].canvas.export(f"/tmp/{name}_reconstruction.off")
+
+        states = [states[0]]
+        for _ in range(len(actions)):
+            a = m.sample(states[-1])
             print(a)
+            states.append(a(states[-1]))
+
+        t.export("/tmp/targeting.off")
+        states[-1].canvas.export("/tmp/reconstruction.off")
+
+    else:
+        p = Program.couch()
+        t = p.execute(CAD())
+        states, actions = m.rollout(t,len(p.compile()))
+        n = "couch"
+        t.export(f"data/{n}_target.off")
+        states[-1].canvas.export(f"data/{n}_reconstruction.off")
+        for n in range(100):
+            states, actions,t,p = makeExample()
+            states, actions = m.rollout(t,len(actions))
+            t.export(f"data/{n}_target.off")
+            states[-1].canvas.export(f"data/{n}_reconstruction.off")
+        
+        
+
             
-        m.zero_grad()
-        L = 0
-        for a,s in zip(actions,states):
-            L += m.loss(s, a)
-        L = L/len(actions)
-        L.backward()
-        O.step()
-        print(f"LOSS {iteration}\t",L)
-        iteration += 1
-        if iteration%100 == 1:
-            print("going to try a rollout both on some random data and on the couch")
-            for target,maximumLength in [(t,len(actions)),
-                                         (Program.couch().execute(CAD()),2)]:
-                states, actions = m.rollout(target,maximumLength)
-                name = "random" if target is t else "couch"
-                target.export(f"/tmp/{name}_target.off")
-                states[-1].canvas.export(f"/tmp/{name}_reconstruction.off")
 
-    states = [states[0]]
-    for _ in range(len(actions)):
-        a = m.sample(states[-1])
-        print(a)
-        states.append(a(states[-1]))
-        
-    t.export("/tmp/targeting.off")
-    states[-1].canvas.export("/tmp/reconstruction.off")
-    
 
-    
-        
 
-        
+
+
+

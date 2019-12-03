@@ -1,0 +1,9 @@
+#!/bin/bash
+
+conda activate ic
+python agent.py  -s checkpoints/imitation.p
+
+while true
+do
+	python agent.py  -s checkpoints/imitation.p -l checkpoints/imitation.p
+done
