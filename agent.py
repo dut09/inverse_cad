@@ -105,7 +105,15 @@ class Agent(Module):
             except: break
 
         return states, actions
-            
+
+    def rollouts(self, spec, maximumLength, N):
+        best = None
+        for _ in range(N):
+            states, actions = self.rollout(spec, maximumLength)
+            iou = states[-1].iou()
+            if best is None or iou > best[0]:
+                best = (iou,states,actions)
+        return best[1:]            
                 
         
         
@@ -170,27 +178,10 @@ if __name__ == "__main__":
             if iteration%50 == 1:
                 if arguments.save:
                     torch.save(m,arguments.save)
-                print("going to try a rollout both on some random data and on the couch")
-                for target,maximumLength in [(t,len(actions)),
-                                             (Program.couch().execute(CAD()),2)]:
-                    states, actions = m.rollout(target,maximumLength)
-                    name = "random" if target is t else "couch"
-                    target.export(f"/tmp/{name}_target.off")
-                    states[-1].canvas.export(f"/tmp/{name}_reconstruction.off")
-
-        states = [states[0]]
-        for _ in range(len(actions)):
-            a = m.sample(states[-1])
-            print(a)
-            states.append(a(states[-1]))
-
-        t.export("/tmp/targeting.off")
-        states[-1].canvas.export("/tmp/reconstruction.off")
-
     else:
         p = Program.couch()
         t = p.execute(CAD())
-        states, actions = m.rollout(t,len(p.compile()))
+        states, actions = m.rollouts(t,len(p.compile()),10)
         n = "couch"
         t.export(f"data/{n}_target.off")
         states[-1].canvas.export(f"data/{n}_reconstruction.off")

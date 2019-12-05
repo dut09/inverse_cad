@@ -37,6 +37,9 @@ class State():
                              for feature in self.canvas_features|self.target_features}
         self.extrude_vertices = extrude_vertices
 
+    def iou(self):
+        return len(self.canvas_features&self.target_features)/len(self.canvas_features|self.target_features)
+
     def addTag(self, feature, tag):
         feature_ = self.findClose(feature)
         if feature_ is None:

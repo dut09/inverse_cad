@@ -297,9 +297,9 @@ class Program():
     @staticmethod
     def sample(s):
         commands = []
-        for _ in range(2):#random.choice(range(1,5))):
+        for _ in range(random.choice([1,2])):
             k = Extrusion.sample(s,
-                                 union=True)#random.random() > 0.3)
+                                 union=random.random() > 0.3 or len(commands) == 0)
             s = k.execute(s)
             commands.append(k)
         return Program(commands)
