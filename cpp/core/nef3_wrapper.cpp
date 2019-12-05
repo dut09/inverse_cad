@@ -529,6 +529,21 @@ private:
 
 const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromData(const std::vector<Point_3>& polygon,
     const Aff_transformation_3& dir) const {
+    // Check if data are valid.
+    CheckError(polygon.size() >= 3, "You need at least three points to define a polygon.");
+    const int n = static_cast<int>(polygon.size());
+    const Point_3& v0 = polygon[0];
+    const Point_3& v1 = polygon[1];
+    int next = -1;
+    for (int i = 2; i < n; ++i) {
+        if (CGAL::collinear(v0, v1, polygon[i])) continue;
+        next = i;
+        break;
+    }
+    CheckError(next != -1, "Polygon is degenerated into a line.");
+    const Point_3 v0_transformed = dir(v0);
+    CheckError(!CGAL::coplanar(v0, v1, polygon[next], v0_transformed), "Extrusion is degenerated because dir is parallel to polygon.");
+
     Polyhedron poly;
     BuildExtrusion<HalfedgeDS> extrusion;
     extrusion.SetExtrusionInfo(polygon, dir);
