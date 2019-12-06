@@ -123,7 +123,10 @@ class CAD():
         return CAD(s)
 
     def export(self, fn):
-        self.child.SaveScene(fn)
+        try:
+            self.child.SaveScene(fn)
+        except:
+            print("really sorry about this but I had trouble saving the file",fn,"which means may be the geometries weird")
 
     def findClose(self, v):
         candidates = [vp for vp in self.getVertices()
