@@ -38,7 +38,7 @@ def rasterize(pts_in_world, V, P):
     return pts[:, :2]
 
 # Draw wireframes.
-def draw_scene(scene, V, P, canvas_or_target, fig_name):
+def draw_scene(scene, V, P, fn, canvas_or_target="canvas", title="", show=False, colors=None):
     # Loop over all vertices and rasterize:
     vertices = []
     if canvas_or_target == 'canvas':
@@ -78,10 +78,11 @@ def draw_scene(scene, V, P, canvas_or_target, fig_name):
     # Draw vertices -- you can assign different colors here. I generated the color randomly.
     for v in vertices:
         ax.plot(v[0], v[1], marker='o', MarkerSize=5, color=np.random.rand(3))
-    plt.title(fig_name)
-    plt.savefig('{}.png'.format(fig_name))
-    plt.show()
-
+    plt.title(title)
+    plt.savefig(fn)
+    if show:
+        plt.show()
+    
 if __name__ == '__main__':
     s = Scene()
     # Create the sofa scene.
@@ -99,4 +100,4 @@ if __name__ == '__main__':
     V = view_matrix(camera_location, camera_lookat, camera_up)
     P = projection_matrix(fov, aspect_ratio, z_min, z_max)
 
-    draw_scene(s, V, P, 'target', 'demo')
+    draw_scene(s, V, P, "/tmp/wireframe.png", 'target', show=True)

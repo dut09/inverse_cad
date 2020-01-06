@@ -37,6 +37,71 @@ class State():
                              for feature in self.canvas_features|self.target_features}
         self.extrude_vertices = extrude_vertices
 
+    def visualize(self,fn,title=None):
+        # Modify your camera parameters here to generate +x, -x, +y, -y, +z, and -z images as you wish.
+        from view_wireframe import view_matrix,projection_matrix,rasterize
+        import matplotlib.pyplot as plot
+        plt = plot # lol
+        fig, ax = plt.subplots(1, 1)
+        camera_location = np.array([0.0, 1.2, -2.0])
+        camera_lookat = np.array([0.0, 1.0, 0.0])
+        camera_up = np.array([0.0, 1.0, 0.0])
+        fov = 60    # This is in degrees.
+        aspect_ratio = 1.0
+        z_min = 0.0
+        z_max = 2.0
+
+        V = view_matrix(camera_location, camera_lookat, camera_up)
+        P = projection_matrix(fov, aspect_ratio, z_min, z_max)
+
+        # draw all of the edges
+        for e in self.edges:
+            u = e.e[0].p
+            v = e.e[1].p
+            uv = rasterize(np.array([u,v]),V,P)
+            u = uv[0]
+            v = uv[1]
+            if e in self.canvas_features and e in self.target_features:
+                color = 'k'
+            elif e in self.canvas_features:
+                color = 'r'
+            elif e in self.target_features:
+                color = 'b'
+            else:
+                assert False
+            ax.plot(uv[:,0], uv[:, 1], color)
+
+        for v in self.vertices:
+            p = rasterize(np.array([v.p]),V,P)[0]
+            if v in self.canvas_features and v in self.target_features:
+                color = 'k'
+            elif v in self.canvas_features:
+                color = 'r'
+            elif v in self.target_features:
+                color = 'b'
+            else:
+                assert False
+
+            ax.plot(p[0], p[1], marker='o', MarkerSize=4, color=color)
+
+            for tag in self.tags[v]:
+                i = ALL_TAGS.index(tag)
+                c = ['y','c','m'][i]
+                r = 0.01
+                angle = i*6.14/len(ALL_TAGS)
+                ax.plot(r*math.cos(angle) + p[0], r*math.sin(angle) + p[1], marker='o', MarkerSize=4, color=c)
+
+            
+
+        if title is not None:
+            plt.title(title)
+        plt.savefig(fn)
+
+    @staticmethod
+    def exportTrace(states, actions, prefix):
+        for n,s,a in zip(range(9999), states, actions):
+            s.visualize(f"{prefix}_{n}.png",title=str(a))
+
     def iou(self):
         return len(self.canvas_features&self.target_features)/len(self.canvas_features|self.target_features)
 

@@ -182,6 +182,8 @@ if __name__ == "__main__":
         p = Program.couch()
         t = p.execute(CAD())
         states, actions = m.rollouts(t,len(p.compile()),10)
+        State.exportTrace(states, actions,"couch")
+        assert False
         n = "couch"
         t.export(f"data/{n}_target.off")
         states[-1].canvas.export(f"data/{n}_reconstruction.off")
