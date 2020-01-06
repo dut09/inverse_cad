@@ -6,15 +6,19 @@
 ```
 git clone https://github.com/dut09/inverse_cad
 ```
-- Create a conda environment and activate it:
+- Create a singularity container:
 ```
-conda env create -f environment.yml
-conda activate inverse_cad
+sudo singularity build container.img singularity
 ```
-- Run `install.sh` from the root folder:
+- Run `install.sh` from the root folder inside the container:
 ```
-./install.sh
+./container.img ./install.sh
 ```
+- Alternatively you can get an interactive shell within the container:
+```
+./container.img
+```
+which is useful when executing the system.
 
 ## How to run
 `./inverse_cad_demo` is an interactive session: it maintains a polyhedron and you type in a few commands to modify it. The polyhedron is empty at the beginning. Below are the detailed explanations of each command:
