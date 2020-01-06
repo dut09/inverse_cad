@@ -1,10 +1,11 @@
-import torch.nn.functional as F
-
 from utilities import *
 from CAD import *
 from state import ALL_TAGS
 from state import *
 
+import time
+
+import torch.nn.functional as F
 import torch
 import torch.nn as nn
 from torch.nn.modules.transformer import TransformerEncoder, TransformerEncoderLayer, LayerNorm
@@ -154,18 +155,24 @@ if __name__ == "__main__":
     if not arguments.test:
         O = torch.optim.Adam(m.parameters(), lr=0.0001)
         iteration = 0
+        timeMakingExamples = 0
+        modelTime = 0
         while True:
+            startTime = time.time()
             # make a training set of actions/states
             states, actions, t, p = makeExample()
+            timeMakingExamples += (time.time() - startTime)
 
-            print("Training on the following program:")
-            print(p)
-            print("which gives the following target:")
-            print(t)
-            print("and has the following actions:")
-            for a in actions:
-                print(a)
+            if False:
+                print("Training on the following program:")
+                print(p)
+                print("which gives the following target:")
+                print(t)
+                print("and has the following actions:")
+                for a in actions:
+                    print(a)
 
+            startTime = time.time()
             m.zero_grad()
             L = 0
             for a,s in zip(actions,states):
@@ -173,7 +180,10 @@ if __name__ == "__main__":
             L = L/len(actions)
             L.backward()
             O.step()
+            modelTime += (time.time() - startTime)
             print(f"LOSS {iteration}\t",L)
+            print(f"Total graphics time: {timeMakingExamples}")
+            print(f"Total model time: {modelTime}")
             iteration += 1
             if iteration%50 == 1:
                 if arguments.save:

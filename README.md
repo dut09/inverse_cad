@@ -14,9 +14,9 @@ sudo singularity build container.img singularity
 ```
 ./container.img ./install.sh
 ```
-- Alternatively you can get an interactive shell within the container:
+- Alternatively you can get an interactive shell within the container, which will have access to cuda if it is available:
 ```
-./container.img
+singularity exec --nv container.img bash
 ```
 which is useful when executing the system.
 
