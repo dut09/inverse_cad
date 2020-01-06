@@ -120,8 +120,11 @@ class Agent(Module):
         
 def makeExample():        
     while True:
-        p = Program.sample(CAD())
-        t = p.execute(CAD())
+        try:
+            p = Program.sample(CAD())
+            t = p.execute(CAD())
+        except RuntimeError: continue
+        
         for _ in range(10):
             actions = p.compile()
             if actions is not None: break
