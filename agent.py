@@ -8,7 +8,8 @@ import time
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
-from torch.nn.modules.transformer import TransformerEncoder, TransformerEncoderLayer, LayerNorm
+#from torch.nn.modules.transformer import TransformerEncoder, TransformerEncoderLayer, LayerNorm
+from transformer import TransformerEncoder
 
 class Agent(Module):
     def __init__(self):
@@ -19,12 +20,13 @@ class Agent(Module):
         layers = 4
 
 
-        layer = TransformerEncoderLayer(self.d_model,
-                                        heads,
-                                        d_ff,
-                                        dropout=0.0,
-                                        activation="relu")
-        self.encoder = TransformerEncoder(layer, layers, LayerNorm(self.d_model))
+        # layer = TransformerEncoderLayer(self.d_model,
+        #                                 heads,
+        #                                 d_ff,
+        #                                 dropout=0.0,
+        #                                 activation="relu")
+        self.encoder = TransformerEncoder(layers, heads, self.d_model, d_ff)
+        #TransformerEncoder(layer, layers, LayerNorm(self.d_model))
 
         number_of_actions = 3 # you can go to next vertex, subtract, or add
         self.predict = nn.Linear(self.d_model, number_of_actions)
@@ -59,11 +61,11 @@ class Agent(Module):
                     mask[i,j] = 1.
                     mask[j,i] = 1.
 
-        X = self.tensor(X).unsqueeze(1)
-        mask = self.tensor(mask).log()
+        X = self.tensor(X).unsqueeze(0)
+        mask = self.tensor(mask).unsqueeze(0)
         
-        encodings = self.encoder(X, mask=mask)
-        yh = self.predict(encodings.squeeze(1))
+        encodings = self.encoder(X, [X.size(1)], mask=mask)
+        yh = self.predict(encodings.squeeze(0))
         number_objects, number_predictions = yh.shape
         yh = yh.contiguous().view(-1)
         yh = F.log_softmax(yh,dim=-1).contiguous().view(number_objects,number_predictions)
@@ -160,6 +162,7 @@ if __name__ == "__main__":
         iteration = 0
         timeMakingExamples = 0
         modelTime = 0
+        losses = []
         while True:
             startTime = time.time()
             # make a training set of actions/states
