@@ -138,8 +138,10 @@ def makeExample():
             states = [State(CAD(),t)]
         except FaceFailure: continue
 
-        for a in actions:
-            states.append(a(states[-1]))
+        try:
+            for a in actions:
+                states.append(a(states[-1]))
+        except FaceFailure: continue
         break
     return states, actions, t, p
 
