@@ -25,7 +25,9 @@ class Agent(Module):
         #                                 d_ff,
         #                                 dropout=0.0,
         #                                 activation="relu")
-        self.encoder = TransformerEncoder(layers, heads, self.d_model, d_ff)
+        self.encoder = TransformerEncoder(layers, heads, self.d_model,
+                                          hidden_dimensionality=d_ff,
+                                          alternate=True)
         #TransformerEncoder(layer, layers, LayerNorm(self.d_model))
 
         number_of_actions = 3 # you can go to next vertex, subtract, or add

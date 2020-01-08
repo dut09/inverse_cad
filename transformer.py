@@ -175,8 +175,9 @@ class TransformerLayer(Module):
         return x
 
 class TransformerEncoder(Module):
-    def __init__(self, layers, heads, entity_dimensionality, hidden_dimensionality=None):
+    def __init__(self, layers, heads, entity_dimensionality, hidden_dimensionality=None, alternate=False):
         super(TransformerEncoder, self).__init__()
+        self.alternate = alternate
         self.layers = \
          nn.ModuleList([TransformerLayer(heads=heads, entity_dimensionality=entity_dimensionality,
                                          hidden_dimensionality=hidden_dimensionality)])
@@ -186,8 +187,14 @@ class TransformerEncoder(Module):
         if mask is None:
             N = x.size(1)
             mask = self.tensor(MultiHeadAttention.makeAttentionMask(n_entities, N=N))
-        for l in self.layers:
-            x = l(x, n_entities, mask=mask)
+        if self.alternate:
+            N = x.size(1)
+            alternationMask = self.tensor(MultiHeadAttention.makeAttentionMask(n_entities, N=N))
+        for li, l in enumerate(self.layers):
+            thisMask = mask
+            if self.alternate and li%2 == 1:
+                thisMask = alternationMask
+            x = l(x, n_entities, mask=thisMask)
         return x
 
 class DecoderBlock(Module):
