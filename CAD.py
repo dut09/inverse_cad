@@ -297,11 +297,11 @@ class Program():
         return str(self)
 
     @staticmethod
-    def sample(s):
+    def sample(s,N):
         while True:
             try:
                 commands = []
-                for _ in range(random.choice([1,2])):
+                for _ in range(random.choice(list(range(1, N + 1)))):
                     k = Extrusion.sample(s,
                                          union=random.random() > 0.3 or len(commands) == 0)
                     s = k.execute(s)

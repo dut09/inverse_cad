@@ -122,10 +122,10 @@ class Agent(Module):
                 
         
         
-def makeExample(referenceProgram=None):        
+def makeExample(referenceProgram=None, N=2):        
     while True:
         try:
-            p = referenceProgram or Program.sample(CAD())
+            p = referenceProgram or Program.sample(CAD(),N)
             t = p.execute(CAD())
         except RuntimeError: continue
         
@@ -149,6 +149,7 @@ def makeExample(referenceProgram=None):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description = "")
+    parser.add_argument("--numberExtrusions","-n",default=2)
     parser.add_argument("--load","-l",default=None)
     parser.add_argument("--save","-s",default=None)
     parser.add_argument("--test",default=False,action='store_true')
@@ -174,7 +175,7 @@ if __name__ == "__main__":
             startTime = time.time()
             # make a training set of actions/states
             if not arguments.memorize:
-                states, actions, t, p = makeExample()
+                states, actions, t, p = makeExample(N=arguments.numberExtrudes)
             timeMakingExamples += (time.time() - startTime)
 
             if False:
