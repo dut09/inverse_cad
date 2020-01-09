@@ -215,9 +215,9 @@ if __name__ == "__main__":
             for n in range(100):
                 os.system(f"rm data/{n}_*")
                 states, actions, t, p = makeExample(N=arguments.numberExtrusions)
+                states[-1].canvas.export(f"data/{n}_target.off")
                 states, actions = m.rollout(t,len(actions))
                 State.exportTrace(states, actions, f"data/{n}_")
-                states[-1].canvas.export(f"data/{n}_target.off")
         
         
 
