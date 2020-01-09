@@ -216,9 +216,12 @@ if __name__ == "__main__":
                 os.system(f"rm data/{n}_*")
                 states, actions, t, p = makeExample(N=arguments.numberExtrusions)
                 states[-1].canvas.export(f"data/{n}_target.off")
-                State.exportTrace(states, actions, f"data/{n}_gf_")
+                State.exportTrace(states, actions, f"data/{n}_gt_")
+                CAD.instrument = True
                 states, actions = m.rollout(t,len(actions))
+                CAD.instrument = False                
                 State.exportTrace(states, actions, f"data/{n}_")
+                
         
         
 

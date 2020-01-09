@@ -100,6 +100,7 @@ class Face(Feature):
 
 class CAD():
     """Purely functional wrapper over Scene"""
+    instrument = False
     def __init__(self, child=None):
         self.child = child or Scene()
 
@@ -118,6 +119,8 @@ class CAD():
         else:
             command.append('-')
         command = " ".join(["extrude"] + command)
+        if CAD.instrument:
+            print(command)
         s.ExtrudeFromString(command)
         return CAD(s)
 

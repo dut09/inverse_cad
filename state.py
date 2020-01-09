@@ -238,17 +238,13 @@ class Extrude(Action):
         if len(el) != 1: raise Death()
 
         el = el[0]
-        print(f"Invoking extrusion. calculating vector from\t{self.v}\t{el}")
         displacement = (self.v.p[0] - el.p[0],
                         self.v.p[1] - el.p[1],
                         self.v.p[2] - el.p[2])
 
-        print("Here is the face:")
-        print(s.extrude_vertices)
         face = [(v.x,v.y,v.z)
                 for v in s.extrude_vertices]
         newCanvas = s.canvas.extrude(face, displacement, self.union)
-        print("successfully invoked extrusion")
 
         return State(newCanvas, s.target)
 
