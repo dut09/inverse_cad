@@ -44,12 +44,14 @@ class State():
         plt = plot # lol
         fig, ax = plt.subplots(1, 1)
         camera_location = np.array([0.0, 1.2, -2.0])
-        camera_lookat = np.array([0.0, 1.0, 0.0])
+        camera_lookat = np.array([0.0, 1.0, 0.5])
+        camera_lookat = camera_lookat/((camera_lookat*camera_lookat).sum()**0.5)
         camera_up = np.array([0.0, 1.0, 0.0])
         fov = 60    # This is in degrees.
         aspect_ratio = 1.0
-        z_min = 0.0
-        z_max = 2.0
+        z_min = min([0.0] + [v.p[-1] for v in self.vertices ])
+        z_max = max([2.0] + [v.p[-1] for v in self.vertices ])
+        
 
         V = view_matrix(camera_location, camera_lookat, camera_up)
         P = projection_matrix(fov, aspect_ratio, z_min, z_max)
