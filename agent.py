@@ -3,6 +3,7 @@ from CAD import *
 from state import ALL_TAGS
 from state import *
 
+import os
 import time
 
 import torch.nn.functional as F
