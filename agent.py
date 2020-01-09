@@ -141,7 +141,7 @@ def makeExample():
         try:
             for a in actions:
                 states.append(a(states[-1]))
-        except FaceFailure: continue
+        except (FaceFailure,RuntimeError): continue
         break
     return states, actions, t, p
 
