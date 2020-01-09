@@ -122,10 +122,10 @@ class Agent(Module):
                 
         
         
-def makeExample():        
+def makeExample(referenceProgram=None):        
     while True:
         try:
-            p = Program.sample(CAD())
+            p = referenceProgram or Program.sample(CAD())
             t = p.execute(CAD())
         except RuntimeError: continue
         
@@ -152,6 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("--load","-l",default=None)
     parser.add_argument("--save","-s",default=None)
     parser.add_argument("--test",default=False,action='store_true')
+    parser.add_argument("--memorize","-m",default=False,action='store_true')
     
     arguments = parser.parse_args()
 
@@ -167,10 +168,13 @@ if __name__ == "__main__":
         timeMakingExamples = 0
         modelTime = 0
         losses = []
+        if arguments.memorize:
+            states, actions, t, p = makeExample(Program.couch())
         while True:
             startTime = time.time()
             # make a training set of actions/states
-            states, actions, t, p = makeExample()
+            if not arguments.memorize:
+                states, actions, t, p = makeExample()
             timeMakingExamples += (time.time() - startTime)
 
             if False:
