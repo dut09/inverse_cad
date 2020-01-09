@@ -216,7 +216,7 @@ if __name__ == "__main__":
                 os.system(f"rm data/{n}_*")
                 states, actions, t, p = makeExample(N=arguments.numberExtrusions)
                 states[-1].canvas.export(f"data/{n}_target.off")
-                State.exportTrace(states, actions, f"data/gt_{n}_")
+                State.exportTrace(states, actions, f"data/{n}_gf_")
                 states, actions = m.rollout(t,len(actions))
                 State.exportTrace(states, actions, f"data/{n}_")
         
