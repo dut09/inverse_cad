@@ -218,9 +218,12 @@ if __name__ == "__main__":
                 states[-1].canvas.export(f"data/{n}_target.off")
                 State.exportTrace(states, actions, f"data/{n}_gt_")
                 CAD.instrument = True
+                print("about to do a rollout")
                 states, actions = m.rollout(t,len(actions))
+                print("successfully rolled")
                 CAD.instrument = False                
                 State.exportTrace(states, actions, f"data/{n}_")
+                print("successfully exported trace")
                 
         
         
