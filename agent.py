@@ -149,7 +149,7 @@ def makeExample(referenceProgram=None, N=2):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description = "")
-    parser.add_argument("--numberExtrusions","-n",default=2)
+    parser.add_argument("--numberExtrusions","-n",default=2,type=int)
     parser.add_argument("--load","-l",default=None)
     parser.add_argument("--save","-s",default=None)
     parser.add_argument("--test",default=False,action='store_true')
