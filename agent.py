@@ -152,7 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("--numberExtrusions","-n",default=2,type=int)
     parser.add_argument("--load","-l",default=None)
     parser.add_argument("--save","-s",default=None)
-    parser.add_argument("--test",default=False,action='store_true')
+    parser.add_argument("--test","-t",default=False,action='store_true')
     parser.add_argument("--memorize","-m",default=False,action='store_true')
     
     arguments = parser.parse_args()
@@ -204,19 +204,18 @@ if __name__ == "__main__":
                 if arguments.save:
                     torch.save(m,arguments.save)
     else:
-        p = Program.couch()
-        t = p.execute(CAD())
-        states, actions = m.rollouts(t,len(p.compile()),10)
-        State.exportTrace(states, actions,"couch")
-        assert False
-        n = "couch"
-        t.export(f"data/{n}_target.off")
-        states[-1].canvas.export(f"data/{n}_reconstruction.off")
-        for n in range(100):
-            states, actions,t,p = makeExample()
-            states, actions = m.rollout(t,len(actions))
-            t.export(f"data/{n}_target.off")
-            states[-1].canvas.export(f"data/{n}_reconstruction.off")
+        if arguments.memorize:
+            p = Program.couch()
+            t = p.execute(CAD())
+            states, actions = m.rollouts(t,len(p.compile()),10)
+            State.exportTrace(states, actions,"couch")
+        else:
+            os.system("mkdir  -p data")
+            for n in range(100):
+                os.system(f"rm data/{n}_*")
+                states, actions, t, p = makeExample(arguments.numberExtrusions)
+                states, actions = m.rollout(t,len(actions))
+                State.exportTrace(states, actions, f"data/{n}_")
         
         
 
