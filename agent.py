@@ -175,7 +175,7 @@ if __name__ == "__main__":
             startTime = time.time()
             # make a training set of actions/states
             if not arguments.memorize:
-                states, actions, t, p = makeExample(N=arguments.numberExtrudes)
+                states, actions, t, p = makeExample(N=arguments.numberExtrusions)
             timeMakingExamples += (time.time() - startTime)
 
             if False:
