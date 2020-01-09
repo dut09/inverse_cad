@@ -214,7 +214,7 @@ if __name__ == "__main__":
             os.system("mkdir  -p data")
             for n in range(100):
                 os.system(f"rm data/{n}_*")
-                states, actions, t, p = makeExample(arguments.numberExtrusions)
+                states, actions, t, p = makeExample(N=arguments.numberExtrusions)
                 states, actions = m.rollout(t,len(actions))
                 State.exportTrace(states, actions, f"data/{n}_")
         
