@@ -53,7 +53,11 @@ static const bool CanPermute(const std::vector<std::vector<int>>& cycles1, const
 const bool Nef3Wrapper::IsOutwardHalfFacet(const int fid, const int vc_idx) const {
     // Step 1: BVH.
     Polyhedron poly;
-    poly_.convert_to_polyhedron(poly);
+    try {
+        poly_.convert_to_polyhedron(poly);
+    } catch (std::exception& e) {
+        CheckError(false, std::string(e.what()));
+    }
     Tree tree(faces(poly).first, faces(poly).second, poly);
 
     // Step 2: Compute the bounding box.

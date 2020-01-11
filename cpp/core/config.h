@@ -4,6 +4,7 @@
 // Common headers.
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <map>
