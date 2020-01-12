@@ -256,7 +256,7 @@ if __name__ == "__main__":
     while True:
         while True:
             try:
-                p = Program.sample(CAD())
+                p = Program.sample(CAD(),1)
                 t = p.execute(CAD())
                 states = [State(CAD(),t)]
                 actions = p.compile(t)

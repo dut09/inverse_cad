@@ -220,16 +220,23 @@ class Extrusion():
             if target.findClose(v) is not None or canvas.findClose(v) is not None:
                 possibleFinalVertices.append(v)
         if len(possibleFinalVertices) == 0: return None
-        
-        # want to pick a random rotation of the vertices
-        if random.random() > 0.5:
-            vs.reverse()
 
-        # now we need to pick a random (circular) ordering of the vertices such that the final 
-        N = random.choice([N for N in range(len(vs))
-                           if vs[(-1+N)] in possibleFinalVertices])
+        DEBUG = True
+        if DEBUG:
+            assert len(possibleFinalVertices) == len(vs) # this is a debugging check
+            N = min(range(len(vs)),
+                key=lambda n: tuple(vs[n].p))
+        else:
+            # want to pick a random rotation of the vertices
+            if random.random() > 0.5:
+                vs.reverse()
+
+            # now we need to pick a random (circular) ordering of the vertices such that the final 
+            N = random.choice([N for N in range(len(vs))
+                               if vs[(-1+N)] in possibleFinalVertices])
         vs = vs[N:] + vs[:N]
         assert vs[-1] in possibleFinalVertices
+            
         compilation = [ NextVertex(v) for v in vs ]
         base = vs[-1]
         connection = base + Vertex(*self.displacement)
@@ -252,7 +259,9 @@ class Extrusion():
                            (5,5,0),
                            (5,0,0)],
                           (0,0,3))
-        faceID = random.choice(range(c.child.GetSceneHalfFacetNumber()))
+            faceID = 0
+        else:
+            faceID = random.choice(range(c.child.GetSceneHalfFacetNumber()))
         f = c.child.GetSceneHalfFacet(faceID)
         polygon = c.child.GenerateRandomPolygon(faceID, 0.5, 0.5, False)
         vertices = polygon.strip().split()

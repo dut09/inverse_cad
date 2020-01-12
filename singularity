@@ -38,4 +38,5 @@ From: ubuntu
 
     conda install -y  numpy dill matplotlib scipy scikit-learn
     conda install pytorch torchvision -c pytorch
+    pip install  torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric
     pip install dill psutil frozendict pathos
