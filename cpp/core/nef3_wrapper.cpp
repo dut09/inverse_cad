@@ -545,6 +545,17 @@ const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromData(const std::vector<Point
         break;
     }
     CheckError(next != -1, "Polygon is degenerated into a line.");
+
+    // Check if there is a self-intersection inside polygon.
+    for (int i = 0; i < n; ++i) {
+        const Segment edge_i(polygon[i], polygon[(i + 1) % n]);
+        for (int j = i + 1; j < n; ++j) {
+            // Check if edge i and edge j are intersecting.
+            const Segment edge_j(polygon[j], polygon[(j + 1) % n]);
+            CheckError(!CGAL::do_intersect(edge_i, edge_j), "This polygon contains self-intersection.");
+        }
+    }
+
     const Point_3 v0_transformed = dir(v0);
     CheckError(!CGAL::coplanar(v0, v1, polygon[next], v0_transformed), "Extrusion is degenerated because dir is parallel to polygon.");
 
