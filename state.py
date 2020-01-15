@@ -44,8 +44,8 @@ class State():
         plt = plot # lol
         fig, ax = plt.subplots(1, 1)
         camera_location = np.array([0.0, 1.2, -2.0])
-        camera_lookat = np.array([0.0, 1.0, 0.5])
-        camera_lookat = camera_lookat/((camera_lookat*camera_lookat).sum()**0.5)
+        camera_lookat = np.array([0.0, 1.0, 0])
+        #camera_lookat = camera_lookat/((camera_lookat*camera_lookat).sum()**0.5)
         camera_up = np.array([0.0, 1.0, 0.0])
         fov = 60    # This is in degrees.
         aspect_ratio = 1.0
@@ -55,6 +55,8 @@ class State():
 
         V = view_matrix(camera_location, camera_lookat, camera_up)
         P = projection_matrix(fov, aspect_ratio, z_min, z_max)
+
+        legend_entries = {}
 
         # draw all of the edges
         for e in self.edges:
@@ -71,6 +73,7 @@ class State():
                 color = 'b'
             else:
                 assert False
+            
             ax.plot(uv[:,0], uv[:, 1], color)
 
         for v in self.vertices:
@@ -83,15 +86,28 @@ class State():
                 color = 'b'
             else:
                 assert False
-
-            ax.plot(p[0], p[1], marker='o', MarkerSize=4, color=color)
+            if color not in legend_entries:
+                label = {'k': 'explained',
+                         'r': 'extraneous',
+                         'b': 'to explain'}[color]
+                legend_entries[color] = label
+            else: label = None
+            ax.plot(p[0], p[1], marker='o', MarkerSize=4, color=color, label=label)
 
             for tag in self.tags[v]:
                 i = ALL_TAGS.index(tag)
-                c = ['y','c','m'][i]
+                c = ['c','y','m'][i]
                 r = 0.01
                 angle = i*6.14/len(ALL_TAGS)
-                ax.plot(r*math.cos(angle) + p[0], r*math.sin(angle) + p[1], marker='o', MarkerSize=4, color=c)
+                if c not in legend_entries:
+                    label = {'c': 'extrude',
+                             'y': 'face'}[c]
+                    legend_entries[c] = label
+                else: label = None
+                ax.plot(r*math.cos(angle) + p[0], r*math.sin(angle) + p[1], marker='o', MarkerSize=7, color=c, label=label)
+                
+
+        plot.legend(bbox_to_anchor=(0,-0.04), loc='upper left', ncol=len(legend_entries))
 
             
 
@@ -101,7 +117,7 @@ class State():
 
     @staticmethod
     def exportTrace(states, actions, prefix):
-        for n,s,a in zip(range(9999), states, actions):
+        for n,s,a in zip(range(9999), states, actions + ["DONE"]):
             s.visualize(f"{prefix}_{n}.png",title=str(a))
 
     def iou(self):

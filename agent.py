@@ -208,8 +208,10 @@ if __name__ == "__main__":
         if arguments.memorize:
             p = Program.couch()
             t = p.execute(CAD())
-            states, actions = m.rollouts(t,len(p.compile()),10)
+            states, actions = m.rollouts(t,len(p.compile()),1)
             State.exportTrace(states, actions,"couch")
+            states[-1].canvas.export("couch_reconstruction.off")
+            t.export("couch_target.off")
         else:
             os.system("mkdir  -p data")
             for n in range(100):
