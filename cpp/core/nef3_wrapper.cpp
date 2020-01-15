@@ -550,6 +550,7 @@ const Nef_polyhedron Nef3Wrapper::BuildExtrusionFromData(const std::vector<Point
     for (int i = 0; i < n; ++i) {
         const Segment edge_i(polygon[i], polygon[(i + 1) % n]);
         for (int j = i + 1; j < n; ++j) {
+            if ((i + 1) % n == j || (j + 1) % n == i) continue; // Don't check adjacent edges.
             // Check if edge i and edge j are intersecting.
             const Segment edge_j(polygon[j], polygon[(j + 1) % n]);
             CheckError(!CGAL::do_intersect(edge_i, edge_j), "This polygon contains self-intersection.");
