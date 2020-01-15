@@ -43,7 +43,7 @@ class State():
         import matplotlib.pyplot as plot
         plt = plot # lol
         fig, ax = plt.subplots(1, 1)
-        camera_location = np.array([0.0, 1.2, -2.0])
+        camera_location = np.array([0.5, 1.2, 2.0])
         camera_lookat = np.array([0.0, 1.0, 0])
         #camera_lookat = camera_lookat/((camera_lookat*camera_lookat).sum()**0.5)
         camera_up = np.array([0.0, 1.0, 0.0])

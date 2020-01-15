@@ -324,20 +324,26 @@ class Program():
         
     @staticmethod
     def couch():
-        return Program([Extrusion((0, 0.1, 1), True,
+        return Program([Extrusion((0, 0, 1), True,
                                   [Vertex(1, 0, 0),
                                    Vertex(1, 1, 0),
                                    Vertex(-1, 1, 0),
                                    Vertex(-1, 0.5, 0),
                                    Vertex(0, 0.5, 0),
                                    Vertex(0, 0, 0)]),
-                        Extrusion((0, 0, -0.5),False,
+                        Extrusion((0, -0, -0.5),False,
                         [
-                            Vertex(-0.8, 0.6, 1),
-                            Vertex(0.0, 0.6, 1),
-                            Vertex(0.0, 0.2, 1),
-                            Vertex(0.8, 0.2, 1),
-                            Vertex(0.8, 0.8, 1),
-                            Vertex(-0.8, 0.8, 1)
+                            Vertex(-0.9, 0.5, 1),
+                            Vertex(0.0, 0.5, 1),
+                            Vertex(0.0, 0.1, 1),
+                            Vertex(0.9, 0.1, 1),
+                            Vertex(0.9, 0.9, 1),
+                            Vertex(-0.9, 0.9, 1)
                         ])
         ])
+
+if __name__ == "__main__":
+    p = Program.couch()
+    t = p.execute(CAD())
+    t.export("couch_target.off")
+    
