@@ -204,7 +204,7 @@ class Extrusion():
     def compile(self, target, canvas):
         from state import NextVertex, Extrude
         vs = list(self.vertices)
-        if not self.union:
+        if not self.union and False:
             print("compiling a subtraction!")
             print("here the vertices inside of the subtraction command")
             print(vs)
@@ -221,7 +221,7 @@ class Extrusion():
                 possibleFinalVertices.append(v)
         if len(possibleFinalVertices) == 0: return None
 
-        DEBUG = True
+        DEBUG = False
         if DEBUG:
             assert len(possibleFinalVertices) == len(vs) # this is a debugging check
             N = min(range(len(vs)),
