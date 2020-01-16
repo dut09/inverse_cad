@@ -218,11 +218,14 @@ if __name__ == "__main__":
             L.backward()
             O.step()
             modelTime += (time.time() - startTime)
-            print(f"LOSS {iteration}\t",L)
-            print(f"Total graphics time: {timeMakingExamples}")
-            print(f"Total model time: {modelTime}")
+            losses.append(L.cpu().tolist())
             iteration += 1
             if iteration%50 == 1:
+                print(f"LOSS {iteration}\t",sum(losses)/len(losses))
+                losses = []
+                print(f"Total graphics time: {timeMakingExamples}")
+                print(f"Total model time: {modelTime}")
+
                 if arguments.save:
                     torch.save(m,arguments.save)
     else:
