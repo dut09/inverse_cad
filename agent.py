@@ -1,3 +1,4 @@
+from geometric import BoundaryEncoder
 from utilities import *
 from CAD import *
 from state import ALL_TAGS
@@ -13,23 +14,30 @@ import torch.nn as nn
 from transformer import TransformerEncoder
 
 class Agent(Module):
-    def __init__(self):
+    backends = ["gnn","transformer","alternate","torch_transformer"]
+    def __init__(self, backend="gnn"):
         super(Agent, self).__init__()
-        self.d_model = 256
+        self.d_model = 128
         heads = 4
         d_ff = self.d_model*2
         layers = 4
 
+        if backend in {"transformer","alternate"}:
+            self.encoder = TransformerEncoder(layers, heads, self.d_model,
+                                              hidden_dimensionality=d_ff,
+                                              alternate=(backend == "alternate"))
+            backend = "transformer"
+        elif backend == "torch_transformer":
+            layer = TransformerEncoderLayer(self.d_model,
+                                            heads,
+                                            d_ff,
+                                            dropout=0.0,
+                                            activation="relu")
+            self.encoder = TransformerEncoder(layer, layers, LayerNorm(self.d_model))
+        elif backend == "gnn":
+            self.encoder = BoundaryEncoder(layers=layers, H=self.d_model)
 
-        # layer = TransformerEncoderLayer(self.d_model,
-        #                                 heads,
-        #                                 d_ff,
-        #                                 dropout=0.0,
-        #                                 activation="relu")
-        self.encoder = TransformerEncoder(layers, heads, self.d_model,
-                                          hidden_dimensionality=d_ff,
-                                          alternate=False)
-        #TransformerEncoder(layer, layers, LayerNorm(self.d_model))
+        self.backend = backend
 
         number_of_actions = 3 # you can go to next vertex, subtract, or add
         self.predict = nn.Linear(self.d_model, number_of_actions)
@@ -50,6 +58,8 @@ class Agent(Module):
         fs = list(sorted(list(state.canvas_features|state.target_features),
                          key=str))
         mask = np.zeros((len(fs),len(fs)))
+        relationship = [["disconnected" for _ in range(len(fs)) ]
+                        for _ in range(len(fs)) ]
 
         X = []
 
@@ -63,12 +73,22 @@ class Agent(Module):
                 if i == j or f.child(fp) or fp.child(f):
                     mask[i,j] = 1.
                     mask[j,i] = 1.
+                if f.child(fp) or fp.child(f):
+                    source = {Face: "f",Edge: "e",Vertex: "v"}[f.__class__]
+                    destination = {Face: "f",Edge: "e",Vertex: "v"}[fp.__class__]
+                    relationship[i][j] = source + "2" + destination
+                    relationship[j][i] = destination + "2" + source
 
         X = self.tensor(X).unsqueeze(0)
         mask = self.tensor(mask).unsqueeze(0)
-        
-        encodings = self.encoder(X, [X.size(1)], mask=mask)
-        yh = self.predict(encodings.squeeze(0))
+
+        if self.backend == "transformer":
+            encodings = self.encoder(X, [X.size(1)], mask=mask).squeeze(0)
+        elif self.backend == "gnn":
+            encodings = self.encoder(X.squeeze(0), relationship)
+        else:
+            assert False, "pytorch transformer deprecated/nonsupported"
+        yh = self.predict(encodings)
         number_objects, number_predictions = yh.shape
         yh = yh.contiguous().view(-1)
         yh = F.log_softmax(yh,dim=-1).contiguous().view(number_objects,number_predictions)
@@ -152,6 +172,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "")
     parser.add_argument("--numberExtrusions","-n",default=2,type=int)
     parser.add_argument("--load","-l",default=None)
+    parser.add_argument("--backend","-b",default="gnn",choices=Agent.backends)
     parser.add_argument("--save","-s",default=None)
     parser.add_argument("--test","-t",default=False,action='store_true')
     parser.add_argument("--memorize","-m",default=False,action='store_true')
