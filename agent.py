@@ -237,19 +237,27 @@ if __name__ == "__main__":
             states[-1].canvas.export("couch_reconstruction.off")
             t.export("couch_target.off")
         else:
-            os.system("mkdir  -p data")
-            for n in range(100):
-                os.system(f"rm data/{n}_*")
+            prefix = arguments.backend + str(arguments.numberExtrusions)
+            os.system(f"mkdir  -p data/{prefix}")
+            IOUs = []
+            
+            for n in range(5):
+                os.system(f"rm data/{prefix}/{n}_*")
                 states, actions, t, p = makeExample(N=arguments.numberExtrusions)
-                states[-1].canvas.export(f"data/{n}_target.off")
-                State.exportTrace(states, actions, f"data/{n}_gt_")
+                states[-1].canvas.export(f"data/{prefix}/{n}_target.off")
+                State.exportTrace(states, actions, f"data/{prefix}/{n}_gt_")
                 CAD.instrument = True
                 print("about to do a rollout")
                 states, actions = m.rollout(t,len(actions))
                 print("successfully rolled")
                 CAD.instrument = False                
-                State.exportTrace(states, actions, f"data/{n}_")
+                State.exportTrace(states, actions, f"data/{prefix}/{n}_")
+                IOUs.append(states[-1].iou())
                 print("successfully exported trace")
+            print("intersection-over-unions",IOUs)
+            print("average",sum(IOUs)/len(IOUs))
+            print("success fraction",sum(iou >= 1. for iou in IOUs )/len(IOUs))
+                
                 
         
         
