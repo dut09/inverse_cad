@@ -1,6 +1,11 @@
 
+# training
 launch transformerextrude1 python agent.py -n 1 -s checkpoints/transformer1.p -b transformer
 launch gnnextrude1 python agent.py -n 1 -s checkpoints/gnn1.p -b gnn
 launch transformerextrude2 python agent.py -n 2 -s checkpoints/transformer2.p -b transformer
 launch alternateextrude2 python agent.py -n 2 -s checkpoints/alternate2.p -b alternate
 launch gnnextrude2 python agent.py -n 2 -s checkpoints/gnn2.p -b gnn
+
+launch testgnnextrude2 python agent.py -n 2 -l checkpoints/gnn2.p -b gnn -t
+launch testtransformerextrude2 python agent.py -n 2 -l checkpoints/transformer2.p -b transformer -t
+launch testalternateextrude2 python agent.py -n 2 -l checkpoints/alternate2.p -b alternate -t 

@@ -241,7 +241,7 @@ if __name__ == "__main__":
             os.system(f"mkdir  -p data/{prefix}")
             IOUs = []
             
-            for n in range(5):
+            for n in range(100):
                 os.system(f"rm data/{prefix}/{n}_*")
                 states, actions, t, p = makeExample(N=arguments.numberExtrusions)
                 states[-1].canvas.export(f"data/{prefix}/{n}_target.off")
