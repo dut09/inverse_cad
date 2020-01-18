@@ -17,7 +17,7 @@ class Agent(Module):
     backends = ["gnn","transformer","alternate","torch_transformer"]
     def __init__(self, backend="gnn"):
         super(Agent, self).__init__()
-        self.d_model = 128
+        self.d_model = 64
         heads = 4
         d_ff = self.d_model*2
         layers = 4
