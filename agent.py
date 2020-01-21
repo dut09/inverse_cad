@@ -14,7 +14,7 @@ import torch.nn as nn
 from transformer import TransformerEncoder
 
 class Agent(Module):
-    backends = ["gnn","transformer","alternate","torch_transformer"]
+    backends = ["gnn","transformer","alternate","torch_transformer","random"]
     def __init__(self, backend="gnn"):
         super(Agent, self).__init__()
         self.d_model = 64
@@ -36,16 +36,18 @@ class Agent(Module):
             self.encoder = TransformerEncoder(layer, layers, LayerNorm(self.d_model))
         elif backend == "gnn":
             self.encoder = BoundaryEncoder(layers=layers, H=self.d_model)
-
+        elif backend == "random":
+            self.encoder = None
+        
         self.backend = backend
 
         number_of_actions = 3 # you can go to next vertex, subtract, or add
-        self.predict = nn.Linear(self.d_model, number_of_actions)
+        if self.encoder is not None:
+            self.predict = nn.Linear(self.d_model, number_of_actions)
 
         self.finalize()
 
     def forward(self, state):
-
         def vectorize(f):
             if isinstance(f,Vertex):
                 return [1,0,0,int(f in state.canvas_features),int(f in state.target_features)] + \
@@ -242,9 +244,9 @@ if __name__ == "__main__":
             os.system(f"mkdir  -p data/{prefix}")
             IOUs = []
             
-            for n in range(100):
+            for n in range(30):
                 os.system(f"rm data/{prefix}/{n}_*")
-                states, actions, t, p = makeExample(N=arguments.numberExtrusions)
+                states, actions, t, p = makeExample(N=[arguments.numberExtrusions])
                 states[-1].canvas.export(f"data/{prefix}/{n}_target.off")
                 State.exportTrace(states, actions, f"data/{prefix}/{n}_gt_")
                 CAD.instrument = True
