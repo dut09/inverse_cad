@@ -7,5 +7,6 @@ launch alternateextrude2 python agent.py -n 2 -s checkpoints/alternate2.p -b alt
 launch gnnextrude2 python agent.py -n 2 -s checkpoints/gnn2.p -b gnn
 
 launch testgnnextrude2 python agent.py -n 2 -l checkpoints/gnn2.p -b gnn -t
+launch testgnnextrude2 python agent.py -n 2 -l checkpoints/gnn2.p -b gnn -t -p 50
 launch testtransformerextrude2 python agent.py -n 2 -l checkpoints/transformer2.p -b transformer -t
 launch testalternateextrude2 python agent.py -n 2 -l checkpoints/alternate2.p -b alternate -t 

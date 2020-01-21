@@ -310,10 +310,14 @@ class Program():
 
     @staticmethod
     def sample(s,N):
+        if isinstance(N,int):
+            N = list(range(1,N + 1))
+        else:
+            assert isinstance(N,list)
         while True:
             try:
                 commands = []
-                for _ in range(random.choice(list(range(1, N + 1)))):
+                for _ in range(random.choice(N)):
                     k = Extrusion.sample(s,
                                          union=random.random() > 0.3 or len(commands) == 0)
                     s = k.execute(s)
