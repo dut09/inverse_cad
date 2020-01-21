@@ -171,6 +171,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description = "")
     parser.add_argument("--numberExtrusions","-n",default=2,type=int)
+    parser.add_argument("--particles","-p",default=1,type=int)
     parser.add_argument("--load","-l",default=None)
     parser.add_argument("--backend","-b",default="gnn",choices=Agent.backends)
     parser.add_argument("--save","-s",default=None)
@@ -248,7 +249,8 @@ if __name__ == "__main__":
                 State.exportTrace(states, actions, f"data/{prefix}/{n}_gt_")
                 CAD.instrument = True
                 print("about to do a rollout")
-                states, actions = m.rollout(t,len(actions))
+                with torch.no_grad():
+                    states, actions = m.rollouts(t,len(actions),arguments.particles)
                 print("successfully rolled")
                 CAD.instrument = False                
                 State.exportTrace(states, actions, f"data/{prefix}/{n}_")
