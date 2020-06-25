@@ -1,5 +1,6 @@
 from scene import Scene
 
+
 import numpy as np
 
 import scipy.spatial
